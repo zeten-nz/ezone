@@ -18,4 +18,13 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  // Context files intentionally export both Provider components and custom
+  // hooks from the same file — a standard React pattern that does not break
+  // Fast Refresh in practice (Vite re-evaluates the whole module on change).
+  {
+    files: ['src/context/**/*.{js,jsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

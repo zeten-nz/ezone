@@ -1,4 +1,4 @@
-import React from 'react';
+import { MdMenu, MdClose } from 'react-icons/md';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
@@ -15,8 +15,12 @@ const Navbar = () => {
           <button
             onClick={toggleSidebar}
             className="lg:hidden p-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors"
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
           >
-            <span className="text-xl">{isOpen ? '✕' : '☰'}</span>
+            {isOpen
+              ? <MdClose className="w-5 h-5 text-neutral-700" />
+              : <MdMenu className="w-5 h-5 text-neutral-700" />
+            }
           </button>
           <h1 className="text-lg md:text-xl font-semibold text-neutral-900">
             {user?.role === 'ADMIN' ? t('dashboard') : t('warrantyForm')}
@@ -28,7 +32,7 @@ const Navbar = () => {
             onClick={toggleLanguage}
             className="px-3 py-2 rounded-lg border border-neutral-200 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
           >
-            {language === 'uz' ? 'РУ' : 'UZ'}
+            {language === 'uz' ? 'RU' : 'UZ'}
           </button>
         </div>
       </div>

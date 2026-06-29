@@ -5,7 +5,6 @@ import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
-import Select from '../components/UI/Select';
 import Toast from '../components/UI/Toast';
 import { Modal, ConfirmModal } from '../components/UI/Modal';
 import Badge from '../components/UI/Badge';
@@ -28,20 +27,29 @@ const AdminUsersModern = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     try {
       const response = await userAPI.getAllUsers();
       setUsers(response.data);
-    } catch (err) {
+    } catch {
       setToast({ type: 'error', message: 'Error loading users' });
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await userAPI.getAllUsers();
+        setUsers(response.data);
+      } catch {
+        setToast({ type: 'error', message: 'Error loading users' });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const handleOpenCreate = () => {
     setEditingUser(null);
@@ -88,7 +96,7 @@ const AdminUsersModern = () => {
       await userAPI.disableUser(userId);
       setToast({ type: 'success', message: 'User disabled' });
       await fetchUsers();
-    } catch (err) {
+    } catch {
       setToast({ type: 'error', message: 'Error disabling user' });
     }
   };
@@ -96,12 +104,16 @@ const AdminUsersModern = () => {
   const handleResetPassword = async () => {
     if (!resetPasswordConfirm) return;
     try {
-      const newPassword = Math.random().toString(36).slice(-8);
+      // crypto.getRandomValues is cryptographically secure — Math.random() is NOT.
+      // Using base-36 encoding of a random 32-bit integer gives 6 readable characters.
+      const arr = new Uint32Array(2);
+      crypto.getRandomValues(arr);
+      const newPassword = Array.from(arr, (n) => n.toString(36)).join('').slice(0, 10);
       await userAPI.resetPassword(resetPasswordConfirm, newPassword);
       setToast({ type: 'success', message: `Password reset to: ${newPassword}` });
       setResetPasswordConfirm(null);
       await fetchUsers();
-    } catch (err) {
+    } catch {
       setToast({ type: 'error', message: 'Error resetting password' });
     }
   };

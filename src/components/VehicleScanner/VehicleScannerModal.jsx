@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 import { recognize } from 'tesseract.js';
+import { MdCameraAlt, MdCheck, MdArrowForward, MdHourglassBottom } from 'react-icons/md';
 import { Modal } from '../UI/Modal';
 import Button from '../UI/Button';
 import { parseFrontSide, parseBackSide } from './parseGuvohnoma';
@@ -48,8 +49,7 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
 
       setExtractedFields(parsed);
       setScanning(false);
-    } catch (error) {
-      console.error('OCR error:', error);
+    } catch {
       setScanning(false);
       setExtractedFields({ error: 'Skanerlab bo\'lmadi. Qayta urinib ko\'ring.' });
     }
@@ -107,7 +107,7 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'
             }`}
           >
-            ● Oldingi tomon
+            1. Oldingi tomon
           </button>
           <span className="text-gray-400">|</span>
           <button
@@ -121,7 +121,7 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            ○ Orqa tomon
+            2. Orqa tomon
           </button>
         </div>
 
@@ -201,7 +201,10 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
                 disabled={scanning}
                 className="flex-1"
               >
-                {scanning ? '⏳ Skanerlanmoqda...' : '📷 Skanerla'}
+                {scanning
+                  ? <><MdHourglassBottom className="w-4 h-4 mr-1 inline" />Skanerlanmoqda...</>
+                  : <><MdCameraAlt className="w-4 h-4 mr-1 inline" />Skanerla</>
+                }
               </Button>
             </>
           ) : (
@@ -218,7 +221,7 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
                   onClick={handleNext}
                   className="flex-1"
                 >
-                  Keyingisi →
+                  Keyingisi <MdArrowForward className="w-4 h-4 ml-1 inline" />
                 </Button>
               )}
               {step === 2 && (
@@ -226,7 +229,7 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
                   onClick={handleConfirm}
                   className="flex-1"
                 >
-                  ✓ Tasdiqlash
+                  <MdCheck className="w-4 h-4 mr-1 inline" /> Tasdiqlash
                 </Button>
               )}
             </>

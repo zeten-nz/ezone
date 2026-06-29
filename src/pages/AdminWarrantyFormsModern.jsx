@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { MdSearch } from 'react-icons/md';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { warrantyAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,51 +13,59 @@ import { SkeletonTable } from '../components/UI/Skeleton';
 
 const AdminWarrantyFormsModern = () => {
   const { t } = useLanguage();
-  const [forms, setForms] = useState([]);
   const [allForms, setAllForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [totalForms, setTotalForms] = useState(0);
   const [selectedForm, setSelectedForm] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    fetchForms();
-  }, []);
-
-  useEffect(() => {
-    updatePagination();
-  }, [search, pageSize, allForms]);
-
   const fetchForms = async () => {
     try {
       const response = await warrantyAPI.getAllForms();
       setAllForms(response.data);
-      setTotalForms(response.data.length);
-    } catch (err) {
+    } catch {
       setToast({ type: 'error', message: 'Error loading warranty forms' });
     } finally {
       setLoading(false);
     }
   };
 
-  const updatePagination = () => {
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await warrantyAPI.getAllForms();
+        setAllForms(response.data);
+      } catch {
+        setToast({ type: 'error', message: 'Error loading warranty forms' });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Derive filtered + paginated data during render (useMemo) instead of
+  // calling setState inside an effect body — avoids cascading render cycles.
+  const { displayForms, totalForms } = useMemo(() => {
     let filtered = allForms;
     if (search) {
-      filtered = filtered.filter(form =>
-        form.vehicle_plate_number.toLowerCase().includes(search.toLowerCase()) ||
-        form.owner_full_name.toLowerCase().includes(search.toLowerCase()) ||
-        form.employee_name.toLowerCase().includes(search.toLowerCase())
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (form) =>
+          form.vehicle_plate_number.toLowerCase().includes(q) ||
+          form.owner_full_name.toLowerCase().includes(q) ||
+          (form.employee_name || '').toLowerCase().includes(q)
       );
     }
-    setTotalForms(filtered.length);
     const start = (currentPage - 1) * pageSize;
-    setForms(filtered.slice(start, start + pageSize));
-  };
+    return {
+      displayForms: filtered.slice(start, start + pageSize),
+      totalForms: filtered.length,
+    };
+  }, [allForms, search, currentPage, pageSize]);
 
   const handleSearch = (value) => {
     setSearch(value);
@@ -70,7 +79,7 @@ const AdminWarrantyFormsModern = () => {
       setToast({ type: 'success', message: 'Form deleted successfully' });
       setDeleteConfirm(null);
       await fetchForms();
-    } catch (err) {
+    } catch {
       setToast({ type: 'error', message: 'Error deleting form' });
     }
   };
@@ -80,7 +89,7 @@ const AdminWarrantyFormsModern = () => {
       const response = await warrantyAPI.getFormDetail(formId);
       setSelectedForm(response.data);
       setShowDetail(true);
-    } catch (err) {
+    } catch {
       setToast({ type: 'error', message: 'Error loading form details' });
     }
   };
@@ -156,7 +165,7 @@ const AdminWarrantyFormsModern = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {forms.length > 0 ? (
+            {displayForms.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -171,7 +180,7 @@ const AdminWarrantyFormsModern = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {forms.map((form) => (
+                      {displayForms.map((form) => (
                         <tr
                           key={form.id}
                           className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors"
@@ -251,7 +260,7 @@ const AdminWarrantyFormsModern = () => {
               <EmptyState
                 title="No warranty forms found"
                 description="Adjust your search filters to find warranty forms"
-                icon={() => <span className="text-3xl">🔍</span>}
+                icon={() => <MdSearch className="w-8 h-8 text-neutral-400" />}
               />
             )}
           </CardContent>

@@ -1,22 +1,25 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { MdDashboard, MdArticle, MdPeople, MdNoteAdd, MdManageAccounts } from 'react-icons/md';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
+
+const adminItems = [
+  { label: 'Asosiy bolim',        path: '/dashboard',      Icon: MdDashboard },
+  { label: 'Kafolat daftarlari',  path: '/warranty-forms', Icon: MdArticle },
+  { label: 'Foydalanuvchilar',    path: '/users',          Icon: MdPeople },
+];
+
+const employeeItems = [
+  { label: 'Kafolat daftari', path: '/warranty-form', Icon: MdNoteAdd },
+  { label: 'Kabinet',         path: '/profile',       Icon: MdManageAccounts },
+];
 
 const Sidebar = () => {
   const { isOpen, closeSidebar } = useSidebar();
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const menuItems = user?.role === 'ADMIN' ? [
-    { label: 'Asosiy bolim', path: '/dashboard', icon: '📊' },
-    { label: 'Kafolat daftarlari', path: '/warranty-forms', icon: '📋' },
-    { label: 'Foydalanuvchilar', path: '/users', icon: '👥' },
-  ] : [
-    { label: 'Kafolat daftari', path: '/warranty-form', icon: '📝' },
-    { label: 'Kabinet', path: '/profile', icon: '⚙️' },
-  ];
-
+  const menuItems = user?.role === 'ADMIN' ? adminItems : employeeItems;
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -28,19 +31,19 @@ const Sidebar = () => {
         </div>
 
         <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
-          {menuItems.map((item) => (
+          {menuItems.map(({ label, path, Icon }) => (
             <Link
-              key={item.path}
-              to={item.path}
+              key={path}
+              to={path}
               onClick={closeSidebar}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                isActive(item.path)
+                isActive(path)
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-neutral-700 hover:bg-neutral-100'
               }`}
             >
-              <span className="text-xl flex-shrink-0">{item.icon}</span>
-              <span className="truncate">{item.label}</span>
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              <span className="truncate">{label}</span>
             </Link>
           ))}
         </nav>

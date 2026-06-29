@@ -1,5 +1,4 @@
-import React from 'react';
-
+﻿
 const Badge = ({ children, variant = 'neutral', size = 'md' }) => {
   const variants = {
     neutral: 'bg-neutral-100 text-neutral-700',

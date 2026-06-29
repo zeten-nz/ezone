@@ -1,36 +1,36 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
+import { STORAGE_KEYS } from '../config/constants';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+  // Lazy initializers run once on mount — reading localStorage here avoids
+  // the setToken/setUser-in-useEffect anti-pattern and removes the async
+  // loading phase entirely (localStorage is synchronous).
+  const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEYS.TOKEN) || null);
+  const [user, setUser]   = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.USER);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      return null;
     }
-
-    setLoading(false);
-  }, []);
+  });
+  const [loading] = useState(false);
 
   const login = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
-    localStorage.setItem('token', authToken);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem(STORAGE_KEYS.TOKEN, authToken);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
   };
 
   return (

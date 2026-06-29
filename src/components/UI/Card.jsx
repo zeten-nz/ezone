@@ -1,5 +1,4 @@
-import React from 'react';
-
+﻿
 export const Card = ({ children, className = '', variant = 'default' }) => {
   const variants = {
     default: 'bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200',

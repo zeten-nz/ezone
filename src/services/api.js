@@ -1,68 +1,59 @@
-import axios from 'axios';
+/**
+ * API BARREL — backward-compatible re-exports
+ *
+ * All page components import named API objects from this file:
+ *   import { authAPI, userAPI, warrantyAPI } from '../services/api';
+ *
+ * The actual implementation lives in dedicated service files under services/.
+ * The axios instance and interceptors live in src/api/client.js.
+ *
+ * This file is the stable public interface. Service internals can evolve
+ * without touching the import statements in every page component.
+ */
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { authService }      from './auth.service';
+import { usersService }     from './users.service';
+import { warrantyService }  from './warranty.service';
+import { dashboardService } from './dashboard.service';
+import { exportService }    from './export.service';
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
-
+// ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
-  login: (username, password) => api.post('/auth/login', { username, password }),
-  changePassword: (currentPassword, newPassword) =>
-    api.post('/auth/change-password', { currentPassword, newPassword }),
-  getProfile: () => api.get('/auth/profile'),
+  login:          (username, password)      => authService.login(username, password),
+  getProfile:     ()                        => authService.getProfile(),
+  changePassword: (currentPw, newPw)        => authService.changePassword(currentPw, newPw),
 };
 
+// ── Users (admin) ─────────────────────────────────────────────────────────────
 export const userAPI = {
-  getAllUsers: () => api.get('/users'),
-  createUser: (data) => api.post('/users', data),
-  getUser: (userId) => api.get(`/users/${userId}`),
-  updateUser: (userId, data) => api.put(`/users/${userId}`, data),
-  disableUser: (userId) => api.patch(`/users/${userId}/disable`),
-  resetPassword: (userId, newPassword) =>
-    api.post(`/users/${userId}/reset-password`, { newPassword }),
+  getAllUsers:    ()                         => usersService.getAll(),
+  getUser:       (userId)                   => usersService.getById(userId),
+  createUser:    (data)                     => usersService.create(data),
+  updateUser:    (userId, data)             => usersService.update(userId, data),
+  disableUser:   (userId)                   => usersService.disable(userId),
+  resetPassword: (userId, newPassword)      => usersService.resetPassword(userId, newPassword),
 };
 
+// ── Warranty forms ────────────────────────────────────────────────────────────
 export const warrantyAPI = {
-  createForm: (data) => api.post('/warranty', data),
-  getAllForms: () => api.get('/warranty'),
-  getFormDetail: (formId) => api.get(`/warranty/${formId}`),
-  deleteForm: (formId) => api.delete(`/warranty/${formId}`),
-  searchForms: (search, filterType) =>
-    api.get('/warranty/search', { params: { search, filterType } }),
+  createForm:    (data)                     => warrantyService.create(data),
+  getAllForms:   ()                          => warrantyService.getAll(),
+  getFormDetail: (formId)                   => warrantyService.getById(formId),
+  deleteForm:    (formId)                   => warrantyService.delete(formId),
+  searchForms:   (search, filterType)       => warrantyService.search(search, filterType),
 };
 
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 export const dashboardAPI = {
-  getDashboard: () => api.get('/dashboard'),
+  getDashboard: () => dashboardService.getStats(),
 };
 
+// ── Excel export ──────────────────────────────────────────────────────────────
 export const exportAPI = {
-  exportWarrantyForms: (days = 'all') =>
-    api.get('/export/warranty', { params: { days }, responseType: 'blob' }),
-  exportByBranch: (branch, days = 'all') =>
-    api.get('/export/branch', { params: { branch, days }, responseType: 'blob' }),
-  exportEmployeeData: (employeeId, days = 'all') =>
-    api.get('/export/employee', { params: { employeeId, days }, responseType: 'blob' }),
+  exportWarrantyForms: (days)               => exportService.allForms(days),
+  exportByBranch:      (branch, days)       => exportService.byBranch(branch, days),
+  exportEmployeeData:  (employeeId, days)   => exportService.byEmployee(employeeId, days),
 };
 
-export default api;
+// Re-export the raw client for edge cases (not for general component use)
+export { default as apiClient } from '../api/client';

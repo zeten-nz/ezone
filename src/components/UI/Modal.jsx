@@ -1,4 +1,4 @@
-import React from 'react';
+import { MdClose } from 'react-icons/md';
 
 export const Modal = ({ isOpen, onClose, children, title, size = 'md' }) => {
   if (!isOpen) return null;
@@ -21,8 +21,9 @@ export const Modal = ({ isOpen, onClose, children, title, size = 'md' }) => {
             <button
               onClick={onClose}
               className="text-neutral-500 hover:text-neutral-700 transition-colors"
+              aria-label="Close"
             >
-              <span className="text-2xl">×</span>
+              <MdClose className="w-5 h-5" />
             </button>
           </div>
         )}

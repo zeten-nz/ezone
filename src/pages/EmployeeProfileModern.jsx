@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ModernEmployeeLayout from '../components/ModernEmployeeLayout';
 import { authAPI, exportAPI } from '../services/api';
+import { downloadBlob, buildExportFilename } from '../utils/download';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
@@ -29,7 +30,7 @@ const EmployeeProfileModern = () => {
       try {
         const response = await authAPI.getProfile();
         setProfile(response.data);
-      } catch (err) {
+      } catch {
         setToast({ type: 'error', message: 'Error loading profile' });
       } finally {
         setLoading(false);
@@ -69,17 +70,10 @@ const EmployeeProfileModern = () => {
     setExporting(true);
     try {
       const response = await exportAPI.exportEmployeeData(user.id, selectedDays);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      const timeRange = selectedDays === 'all' ? 'all' : `last${selectedDays}days`;
-      link.setAttribute('download', `my_warranty_${new Date().toISOString().split('T')[0]}_${timeRange}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
+      downloadBlob(response.data, buildExportFilename('my_warranty', selectedDays));
       setToast({ type: 'success', message: 'Excel file downloaded' });
     } catch (err) {
-      setToast({ type: 'error', message: 'Error exporting data' });
+      setToast({ type: 'error', message: err.message || 'Error exporting data' });
     } finally {
       setExporting(false);
     }

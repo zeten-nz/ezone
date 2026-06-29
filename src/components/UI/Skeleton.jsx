@@ -1,5 +1,4 @@
-import React from 'react';
-
+﻿
 const Skeleton = ({ className = '', count = 1, height = 'h-4', width = 'w-full' }) => (
   <>
     {Array.from({ length: count }).map((_, i) => (

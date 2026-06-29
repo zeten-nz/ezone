@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MdCheckCircle, MdCameraAlt } from 'react-icons/md';
 import ModernEmployeeLayout from '../components/ModernEmployeeLayout';
 import { warrantyAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -8,8 +9,18 @@ import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Select from '../components/UI/Select';
 import Toast from '../components/UI/Toast';
-import Badge from '../components/UI/Badge';
 import VehicleScannerModal from '../components/VehicleScanner/VehicleScannerModal';
+
+const SectionCard = ({ title, children }) => (
+  <Card>
+    <CardHeader>
+      <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      {children}
+    </CardContent>
+  </Card>
+);
 
 const EmployeeWarrantyFormModern = () => {
   const { t } = useLanguage();
@@ -130,23 +141,12 @@ const EmployeeWarrantyFormModern = () => {
         });
         setSubmitted(false);
       }, 2000);
-    } catch (err) {
+    } catch {
       setToast({ type: 'error', message: 'Error submitting form' });
     } finally {
       setLoading(false);
     }
   };
-
-  const SectionCard = ({ title, children }) => (
-    <Card>
-      <CardHeader>
-        <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {children}
-      </CardContent>
-    </Card>
-  );
 
   if (submitted) {
     return (
@@ -154,7 +154,7 @@ const EmployeeWarrantyFormModern = () => {
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-              <span className="text-3xl">✓</span>
+              <MdCheckCircle className="w-9 h-9 text-green-600" />
             </div>
             <h2 className="text-2xl font-bold text-neutral-900">Form Submitted!</h2>
             <p className="text-neutral-600">Your warranty form has been submitted successfully</p>
@@ -265,7 +265,8 @@ const EmployeeWarrantyFormModern = () => {
                 size="sm"
                 onClick={() => setScannerOpen(true)}
               >
-                📷 Guvohnomani Skanerla
+                <MdCameraAlt className="w-4 h-4 mr-1 inline" />
+                Guvohnomani Skanerla
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

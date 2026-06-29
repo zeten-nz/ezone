@@ -165,12 +165,12 @@ const translations = {
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
-    const saved = localStorage.getItem('language');
+    const saved = localStorage.getItem('ezone_language');
     return saved || 'uz';
   });
 
   useEffect(() => {
-    localStorage.setItem('language', language);
+    localStorage.setItem('ezone_language', language);
   }, [language]);
 
   const t = (key) => {

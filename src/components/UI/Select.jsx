@@ -1,6 +1,6 @@
-import React from 'react';
+import { forwardRef } from 'react';
 
-const Select = React.forwardRef(({
+const Select = forwardRef(({
   label,
   options = [],
   error,

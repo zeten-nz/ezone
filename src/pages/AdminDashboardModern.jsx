@@ -1,12 +1,41 @@
 import { useState, useEffect } from 'react';
+import { MdPeople, MdArticle, MdArrowUpward, MdArrowDownward } from 'react-icons/md';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { dashboardAPI, exportAPI } from '../services/api';
+import { downloadBlob, buildExportFilename } from '../utils/download';
 import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Select from '../components/UI/Select';
 import Toast from '../components/UI/Toast';
-import Skeleton, { SkeletonCard } from '../components/UI/Skeleton';
+import { SkeletonCard } from '../components/UI/Skeleton';
+
+const KPICard = ({ title, value, Icon, trend }) => (
+  <Card className="overflow-hidden">
+    <CardContent className="p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-neutral-600">{title}</p>
+          <p className="text-3xl font-bold text-neutral-900 mt-2">{value}</p>
+          {trend && (
+            <p className={`flex items-center gap-1 text-sm mt-2 font-medium ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {trend > 0
+                ? <MdArrowUpward className="w-4 h-4" />
+                : <MdArrowDownward className="w-4 h-4" />
+              }
+              {Math.abs(trend)}% this month
+            </p>
+          )}
+        </div>
+        {Icon && (
+          <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+            <Icon className="w-6 h-6 text-blue-600" />
+          </div>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const AdminDashboardModern = () => {
   const { t } = useLanguage();
@@ -21,7 +50,7 @@ const AdminDashboardModern = () => {
       try {
         const response = await dashboardAPI.getDashboard();
         setData(response.data);
-      } catch (err) {
+      } catch {
         setToast({ type: 'error', message: 'Error loading dashboard' });
       } finally {
         setLoading(false);
@@ -35,44 +64,14 @@ const AdminDashboardModern = () => {
     setExporting(true);
     try {
       const response = await exportAPI.exportWarrantyForms(selectedDays);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      const timeRange = selectedDays === 'all' ? 'all' : `last${selectedDays}days`;
-      link.setAttribute('download', `warranty_forms_${new Date().toISOString().split('T')[0]}_${timeRange}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
+      downloadBlob(response.data, buildExportFilename('warranty_forms', selectedDays));
       setToast({ type: 'success', message: 'Excel file downloaded successfully' });
     } catch (err) {
-      setToast({ type: 'error', message: 'Error exporting data' });
+      setToast({ type: 'error', message: err?.message || 'Error exporting data' });
     } finally {
       setExporting(false);
     }
   };
-
-  const KPICard = ({ title, value, icon, trend }) => (
-    <Card className="overflow-hidden">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-medium text-neutral-600">{title}</p>
-            <p className="text-3xl font-bold text-neutral-900 mt-2">{value}</p>
-            {trend && (
-              <p className={`text-sm mt-2 font-medium ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}% this month
-              </p>
-            )}
-          </div>
-          {icon && (
-            <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-xl">
-              {icon}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   if (loading) {
     return (
@@ -109,13 +108,13 @@ const AdminDashboardModern = () => {
           <KPICard
             title={t('totalEmployees')}
             value={data?.total_employees || 0}
-            icon="👥"
+            Icon={MdPeople}
             trend={12}
           />
           <KPICard
             title={t('totalForms')}
             value={data?.total_forms || 0}
-            icon="📋"
+            Icon={MdArticle}
             trend={24}
           />
         </div>
