@@ -21,6 +21,9 @@ export const usersService = {
   disable: (userId) =>
     client.patch(`/users/${userId}/disable`),
 
+  enable: (userId) =>
+    client.patch(`/users/${userId}/enable`),
+
   resetPassword: (userId, newPassword) =>
     client.post(`/users/${userId}/reset-password`, { newPassword }),
 };

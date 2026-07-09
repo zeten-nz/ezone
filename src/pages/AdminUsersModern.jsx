@@ -1,131 +1,253 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Search, UserPlus, Pencil, KeyRound, Ban, CheckCircle, Users as UsersIcon, UserX } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { userAPI } from '../services/api';
+import { initialsOf } from '../utils/initials';
 import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
+import Select from '../components/UI/Select';
 import Toast from '../components/UI/Toast';
 import { Modal, ConfirmModal } from '../components/UI/Modal';
-import Badge from '../components/UI/Badge';
-import { SkeletonTable } from '../components/UI/Skeleton';
+import StatusBadge from '../components/UI/StatusBadge';
+import EmptyState from '../components/UI/EmptyState';
+import Skeleton, { SkeletonTable } from '../components/UI/Skeleton';
+import ErrorState from '../components/UI/ErrorState';
+import DataTable from '../components/UI/DataTable';
+import Pagination from '../components/UI/Pagination';
+import UserFormModal from '../components/Users/UserFormModal';
+import NewPasswordModal from '../components/Users/NewPasswordModal';
+
+const PAGE_SIZE = 10;
 
 const AdminUsersModern = () => {
   const { t } = useLanguage();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    username: '',
-    password: '',
-    phone: '',
-    branch_code: '',
-  });
   const [toast, setToast] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [statusConfirm, setStatusConfirm] = useState(null); // { id, action: 'enable' | 'disable' }
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState(null);
+  const [newPassword, setNewPassword] = useState(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (showLoader = true) => {
+    if (showLoader) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const response = await userAPI.getAllUsers();
       setUsers(response.data);
-    } catch {
-      setToast({ type: 'error', message: 'Error loading users' });
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    void (async () => {
-      try {
-        const response = await userAPI.getAllUsers();
-        setUsers(response.data);
-      } catch {
-        setToast({ type: 'error', message: 'Error loading users' });
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleRetry = () => fetchUsers(true);
+
+  // The backend has no server-side search/filter/pagination for users (see
+  // usersService.getAll) — everything below runs over the single fetched
+  // list, exactly as before, just windowed for display.
+  const employees = useMemo(() => users.filter((u) => u.role === 'EMPLOYEE'), [users]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return employees.filter((u) => {
+      const matchesSearch =
+        !q ||
+        u.full_name?.toLowerCase().includes(q) ||
+        u.username?.toLowerCase().includes(q) ||
+        u.phone?.toLowerCase().includes(q) ||
+        u.branch_code?.toLowerCase().includes(q);
+      const matchesStatus =
+        statusFilter === 'all' || (statusFilter === 'active' ? u.is_active : !u.is_active);
+      return matchesSearch && matchesStatus;
+    });
+  }, [employees, search, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(currentPage, totalPages);
+  const paginated = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (value) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = search !== '' || statusFilter !== 'all';
 
   const handleOpenCreate = () => {
     setEditingUser(null);
-    setFormData({
-      full_name: '',
-      username: '',
-      password: '',
-      phone: '',
-      branch_code: '',
-    });
     setShowModal(true);
   };
 
   const handleOpenEdit = (user) => {
     setEditingUser(user);
-    setFormData({
-      full_name: user.full_name,
-      username: user.username,
-      password: '',
-      phone: user.phone || '',
-      branch_code: user.branch_code || '',
-    });
     setShowModal(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (data) => {
     try {
       if (editingUser) {
-        await userAPI.updateUser(editingUser.id, formData);
-        setToast({ type: 'success', message: 'User updated successfully' });
+        await userAPI.updateUser(editingUser.id, data);
+        setToast({ type: 'success', message: t('userUpdated') });
       } else {
-        await userAPI.createUser(formData);
-        setToast({ type: 'success', message: 'User created successfully' });
+        await userAPI.createUser(data);
+        setToast({ type: 'success', message: t('userCreated') });
       }
       setShowModal(false);
-      await fetchUsers();
+      setEditingUser(null);
+      await fetchUsers(false);
     } catch (err) {
-      setToast({ type: 'error', message: err.response?.data?.message || 'Error saving user' });
+      setToast({ type: 'error', message: err.message });
     }
   };
 
-  const handleDisable = async (userId) => {
+  const handleToggleStatus = async () => {
+    if (!statusConfirm) return;
+    const { id, action } = statusConfirm;
     try {
-      await userAPI.disableUser(userId);
-      setToast({ type: 'success', message: 'User disabled' });
-      await fetchUsers();
-    } catch {
-      setToast({ type: 'error', message: 'Error disabling user' });
+      if (action === 'enable') {
+        await userAPI.enableUser(id);
+        setToast({ type: 'success', message: t('userEnabled') });
+      } else {
+        await userAPI.disableUser(id);
+        setToast({ type: 'success', message: t('userDisabled') });
+      }
+      setStatusConfirm(null);
+      await fetchUsers(false);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
     }
   };
 
   const handleResetPassword = async () => {
     if (!resetPasswordConfirm) return;
     try {
-      // crypto.getRandomValues is cryptographically secure — Math.random() is NOT.
-      // Using base-36 encoding of a random 32-bit integer gives 6 readable characters.
       const arr = new Uint32Array(2);
       crypto.getRandomValues(arr);
-      const newPassword = Array.from(arr, (n) => n.toString(36)).join('').slice(0, 10);
-      await userAPI.resetPassword(resetPasswordConfirm, newPassword);
-      setToast({ type: 'success', message: `Password reset to: ${newPassword}` });
+      const generated = Array.from(arr, (n) => n.toString(36)).join('').slice(0, 10);
+      await userAPI.resetPassword(resetPasswordConfirm, generated);
       setResetPasswordConfirm(null);
-      await fetchUsers();
-    } catch {
-      setToast({ type: 'error', message: 'Error resetting password' });
+      setNewPassword(generated);
+      await fetchUsers(false);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
     }
   };
 
-  const employees = users.filter(u => u.role === 'EMPLOYEE');
+  const columns = [
+    {
+      key: 'name',
+      header: t('fullName'),
+      render: (u) => (
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-semibold flex items-center justify-center flex-shrink-0">
+            {initialsOf(u.full_name)}
+          </div>
+          <span className="font-medium text-neutral-900 truncate">{u.full_name}</span>
+        </div>
+      ),
+    },
+    { key: 'username', header: t('username'), render: (u) => u.username },
+    { key: 'branch', header: t('branch'), render: (u) => u.branch_code || '—' },
+    { key: 'phone', header: t('phone'), render: (u) => u.phone || '—' },
+    {
+      key: 'status',
+      header: t('status'),
+      render: (u) => <StatusBadge status={u.is_active ? 'ACTIVE' : 'DISABLED'} />,
+    },
+  ];
+
+  const renderActions = (u) => (
+    <>
+      <Button size="sm" variant="outline" icon={Pencil} onClick={() => handleOpenEdit(u)}>
+        {t('editUser')}
+      </Button>
+      {u.is_active ? (
+        <>
+          <Button size="sm" variant="secondary" icon={KeyRound} onClick={() => setResetPasswordConfirm(u.id)}>
+            {t('resetPasswordAction')}
+          </Button>
+          <Button size="sm" variant="danger" icon={Ban} onClick={() => setStatusConfirm({ id: u.id, action: 'disable' })}>
+            {t('disableAction')}
+          </Button>
+        </>
+      ) : (
+        <Button size="sm" variant="success" icon={CheckCircle} onClick={() => setStatusConfirm({ id: u.id, action: 'enable' })}>
+          {t('enableAction')}
+        </Button>
+      )}
+    </>
+  );
+
+  const renderMobileCard = (u) => (
+    <div className="border border-neutral-200 rounded-lg p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-full bg-blue-600 text-white text-xs font-semibold flex items-center justify-center flex-shrink-0">
+          {initialsOf(u.full_name)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-neutral-900 truncate">{u.full_name}</p>
+          <p className="text-xs text-neutral-500 mt-0.5">@{u.username}</p>
+        </div>
+        <StatusBadge status={u.is_active ? 'ACTIVE' : 'DISABLED'} />
+      </div>
+      <dl className="grid grid-cols-2 gap-2 text-xs">
+        <div><dt className="text-neutral-400">{t('branch')}</dt><dd className="text-neutral-700 font-medium truncate">{u.branch_code || '—'}</dd></div>
+        <div><dt className="text-neutral-400">{t('phone')}</dt><dd className="text-neutral-700 font-medium truncate">{u.phone || '—'}</dd></div>
+      </dl>
+      <div className="flex flex-wrap gap-2 pt-1">{renderActions(u)}</div>
+    </div>
+  );
 
   if (loading) {
     return (
       <ModernAdminLayout>
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold text-neutral-900">{t('users')}</h1>
-          <SkeletonTable />
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton height="h-9" width="w-48" />
+              <Skeleton height="h-5" width="w-72" />
+            </div>
+            <Skeleton height="h-10" width="w-32" />
+          </div>
+          <Card><CardContent className="p-4"><Skeleton height="h-10" /></CardContent></Card>
+          <Card><CardContent className="p-4"><SkeletonTable /></CardContent></Card>
+        </div>
+      </ModernAdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ModernAdminLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl font-semibold text-neutral-900">{t('users')}</h1>
+          <ErrorState title={t('unableToLoadUsers')} description={error} onRetry={handleRetry} />
         </div>
       </ModernAdminLayout>
     );
@@ -133,97 +255,85 @@ const AdminUsersModern = () => {
 
   return (
     <ModernAdminLayout>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900">{t('users')}</h1>
-            <p className="text-neutral-600 mt-2">Manage system users and permissions</p>
+            <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('users')}</h1>
+            <p className="text-neutral-500 mt-1.5">{t('usersSubtitle')}</p>
           </div>
-          <Button onClick={handleOpenCreate}>
+          <Button onClick={handleOpenCreate} icon={UserPlus}>
             {t('createUser')}
           </Button>
         </div>
 
         <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
+              <Input
+                icon={Search}
+                placeholder={t('searchUsersPlaceholder')}
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+              <Select
+                value={statusFilter}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                options={[
+                  { value: 'all', label: t('allStatuses') },
+                  { value: 'active', label: t('active') },
+                  { value: 'inactive', label: t('inactive') },
+                ]}
+              />
+              {hasActiveFilters && (
+                <Button variant="secondary" onClick={handleClearFilters}>{t('clear')}</Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Employees ({employees.length})
-            </h2>
+            <h2 className="text-base font-semibold text-neutral-900">{t('users')} ({filtered.length})</h2>
           </CardHeader>
           <CardContent>
-            {employees.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-200 bg-neutral-50">
-                      <th className="text-left py-4 px-4 font-semibold text-neutral-700">Name</th>
-                      <th className="text-left py-4 px-4 font-semibold text-neutral-700">Username</th>
-                      <th className="text-left py-4 px-4 font-semibold text-neutral-700">Branch</th>
-                      <th className="text-left py-4 px-4 font-semibold text-neutral-700">Phone</th>
-                      <th className="text-left py-4 px-4 font-semibold text-neutral-700">Status</th>
-                      <th className="text-left py-4 px-4 font-semibold text-neutral-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {employees.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors"
-                      >
-                        <td className="py-4 px-4 font-medium text-neutral-900">{user.full_name}</td>
-                        <td className="py-4 px-4 text-neutral-700">{user.username}</td>
-                        <td className="py-4 px-4 text-neutral-700">{user.branch_code || '—'}</td>
-                        <td className="py-4 px-4 text-neutral-700">{user.phone || '—'}</td>
-                        <td className="py-4 px-4">
-                          <Badge variant={user.is_active ? 'success' : 'danger'}>
-                            {user.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenEdit(user)}
-                            >
-                              Edit
-                            </Button>
-                            {user.is_active && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => setResetPasswordConfirm(user.id)}
-                                >
-                                  Reset Pass
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="danger"
-                                  onClick={() => setDeleteConfirm(user.id)}
-                                >
-                                  Disable
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            {employees.length === 0 ? (
+              <EmptyState
+                title={t('noEmployeesYet')}
+                description={t('noEmployeesYetDesc')}
+                icon={UsersIcon}
+                action={handleOpenCreate}
+                actionText={t('createUser')}
+              />
+            ) : filtered.length === 0 ? (
+              <EmptyState
+                title={t('noUsersMatch')}
+                description={t('noUsersMatchDesc')}
+                icon={UserX}
+                action={handleClearFilters}
+                actionText={t('clear')}
+              />
             ) : (
-              <div className="text-center py-12">
-                <p className="text-neutral-500">No employees yet</p>
+              <div className="space-y-4">
+                <DataTable
+                  columns={columns}
+                  rows={paginated}
+                  rowKey={(u) => u.id}
+                  renderActions={renderActions}
+                  renderMobileCard={renderMobileCard}
+                  actionsHeader={t('actions')}
+                />
+                <Pagination
+                  currentPage={pageSafe}
+                  totalPages={totalPages}
+                  totalItems={filtered.length}
+                  pageSize={PAGE_SIZE}
+                  hasNext={pageSafe < totalPages}
+                  hasPrevious={pageSafe > 1}
+                  onPageChange={setCurrentPage}
+                  itemsLabel={t('submissionsUnit')}
+                />
               </div>
             )}
           </CardContent>
@@ -236,71 +346,34 @@ const AdminUsersModern = () => {
         title={editingUser ? t('editUser') : t('createUser')}
         size="md"
       >
-        <div className="space-y-4">
-          <Input
-            label={t('fullName') || 'Full Name'}
-            value={formData.full_name}
-            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-            required
+        {showModal && (
+          <UserFormModal
+            editingUser={editingUser}
+            onSubmit={handleSave}
+            onCancel={() => setShowModal(false)}
           />
-          <Input
-            label={t('username')}
-            value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            required
-            disabled={!!editingUser}
-          />
-          {!editingUser && (
-            <Input
-              label={t('password')}
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              showPasswordToggle
-            />
-          )}
-          <Input
-            label={t('phone')}
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          />
-          <Input
-            label="Branch Code"
-            value={formData.branch_code}
-            onChange={(e) => setFormData({ ...formData, branch_code: e.target.value })}
-          />
-          <div className="flex gap-3 justify-end pt-4">
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={handleSave}>
-              {t('save')}
-            </Button>
-          </div>
-        </div>
+        )}
       </Modal>
 
+      <NewPasswordModal password={newPassword} onClose={() => setNewPassword(null)} />
+
       <ConfirmModal
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => {
-          handleDisable(deleteConfirm);
-          setDeleteConfirm(null);
-        }}
-        title="Disable User"
-        message="Are you sure you want to disable this user?"
-        confirmText="Disable"
-        isDangerous
+        isOpen={!!statusConfirm}
+        onClose={() => setStatusConfirm(null)}
+        onConfirm={handleToggleStatus}
+        title={statusConfirm?.action === 'enable' ? t('enableUserTitle') : t('disableUserTitle')}
+        message={statusConfirm?.action === 'enable' ? t('enableUserMessage') : t('disableUserMessage')}
+        confirmText={statusConfirm?.action === 'enable' ? t('enableAction') : t('disableAction')}
+        isDangerous={statusConfirm?.action !== 'enable'}
       />
 
       <ConfirmModal
         isOpen={!!resetPasswordConfirm}
         onClose={() => setResetPasswordConfirm(null)}
         onConfirm={handleResetPassword}
-        title="Reset Password"
-        message="A new temporary password will be generated. The user will need to change it on next login."
-        confirmText="Reset"
+        title={t('resetPasswordConfirmTitle')}
+        message={t('resetPasswordConfirmMessage')}
+        confirmText={t('resetPasswordAction')}
       />
     </ModernAdminLayout>
   );

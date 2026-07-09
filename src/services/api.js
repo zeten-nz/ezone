@@ -11,17 +11,22 @@
  * without touching the import statements in every page component.
  */
 
-import { authService }      from './auth.service';
-import { usersService }     from './users.service';
-import { warrantyService }  from './warranty.service';
-import { dashboardService } from './dashboard.service';
-import { exportService }    from './export.service';
+import { authService }                 from './auth.service';
+import { usersService }                from './users.service';
+import { warrantyService }             from './warranty.service';
+import { dashboardService }            from './dashboard.service';
+import { exportService }               from './export.service';
+import { registrationRequestsService } from './registrationRequests.service';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
-  login:          (username, password)      => authService.login(username, password),
-  getProfile:     ()                        => authService.getProfile(),
-  changePassword: (currentPw, newPw)        => authService.changePassword(currentPw, newPw),
+  register:            (data)                    => authService.register(data),
+  login:               (username, password)      => authService.login(username, password),
+  getProfile:          ()                        => authService.getProfile(),
+  changePassword:      (currentPw, newPw)        => authService.changePassword(currentPw, newPw),
+  getProfilePhotoBlob: ()                        => authService.getProfilePhotoBlob(),
+  updateProfilePhoto:  (photo)                   => authService.updateProfilePhoto(photo),
+  removeProfilePhoto:  ()                        => authService.removeProfilePhoto(),
 };
 
 // ── Users (admin) ─────────────────────────────────────────────────────────────
@@ -31,13 +36,16 @@ export const userAPI = {
   createUser:    (data)                     => usersService.create(data),
   updateUser:    (userId, data)             => usersService.update(userId, data),
   disableUser:   (userId)                   => usersService.disable(userId),
+  enableUser:    (userId)                   => usersService.enable(userId),
   resetPassword: (userId, newPassword)      => usersService.resetPassword(userId, newPassword),
 };
 
 // ── Warranty forms ────────────────────────────────────────────────────────────
 export const warrantyAPI = {
   createForm:    (data)                     => warrantyService.create(data),
-  getAllForms:   ()                          => warrantyService.getAll(),
+  updateForm:    (formId, data)             => warrantyService.update(formId, data),
+  getAllForms:   (page, limit, search)       => warrantyService.getAll(page, limit, search),
+  getMyForms:   (page, limit, search)       => warrantyService.getMyForms(page, limit, search),
   getFormDetail: (formId)                   => warrantyService.getById(formId),
   deleteForm:    (formId)                   => warrantyService.delete(formId),
   searchForms:   (search, filterType)       => warrantyService.search(search, filterType),
@@ -50,9 +58,18 @@ export const dashboardAPI = {
 
 // ── Excel export ──────────────────────────────────────────────────────────────
 export const exportAPI = {
-  exportWarrantyForms: (days)               => exportService.allForms(days),
-  exportByBranch:      (branch, days)       => exportService.byBranch(branch, days),
-  exportEmployeeData:  (employeeId, days)   => exportService.byEmployee(employeeId, days),
+  exportWarrantyForms: (days, lang)               => exportService.allForms(days, lang),
+  exportByBranch:      (branch, days, lang)       => exportService.byBranch(branch, days, lang),
+  exportEmployeeData:  (employeeId, days, lang)   => exportService.byEmployee(employeeId, days, lang),
+};
+
+// ── Registration requests (admin) ────────────────────────────────────────────
+export const registrationRequestsAPI = {
+  getAll:        ()             => registrationRequestsService.getAll(),
+  getById:       (id)           => registrationRequestsService.getById(id),
+  getPhotoBlob:  (id)           => registrationRequestsService.getPhotoBlob(id),
+  approve:       (id)           => registrationRequestsService.approve(id),
+  reject:        (id, notes)    => registrationRequestsService.reject(id, notes),
 };
 
 // Re-export the raw client for edge cases (not for general component use)

@@ -1,5 +1,6 @@
 import { useState, forwardRef } from 'react';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Input = forwardRef(({
   label,
@@ -12,6 +13,7 @@ const Input = forwardRef(({
   className = '',
   ...props
 }, ref) => {
+  const { t } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const inputType = showPassword ? 'text' : type;
 
@@ -41,7 +43,7 @@ const Input = forwardRef(({
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? t('hidePassword') : t('showPassword')}
           >
             {showPassword
               ? <MdVisibilityOff className="w-5 h-5" />

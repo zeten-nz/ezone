@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MdCheckCircle, MdError, MdWarning, MdInfo, MdClose } from 'react-icons/md';
+import { useLanguage } from '../../context/LanguageContext';
 
 const typeStyles = {
   success: 'bg-green-50 text-green-800 border-green-200',
@@ -16,6 +17,7 @@ const typeIcons = {
 };
 
 const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
       <button
         onClick={() => setIsVisible(false)}
         className="opacity-70 hover:opacity-100 transition-opacity"
-        aria-label="Dismiss"
+        aria-label={t('close')}
       >
         <MdClose className="w-4 h-4" />
       </button>

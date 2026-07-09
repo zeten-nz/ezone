@@ -34,7 +34,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         'xl': '12px',

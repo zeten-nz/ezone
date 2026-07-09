@@ -7,13 +7,17 @@
  *                         '../../config/constants'. Prevents brittle relative
  *                         paths that break when files are moved.
  *
- *  2. CHUNK SPLITTING  — vendor libraries split into separate chunks:
- *       • vendor-react    — React core (changes least → cached longest)
- *       • vendor-router   — React Router
- *       • vendor-axios    — HTTP client
- *       • vendor-tesseract — Tesseract OCR (large, only on warranty form)
- *       • vendor-webcam   — react-webcam (only on warranty form)
- *     Maximises cache hits across deployments.
+ *  2. CHUNK SPLITTING  — manualChunks is an ALLOWLIST, not a blocklist: only
+ *       dependencies genuinely used on every route (react/react-dom,
+ *       react-router-dom, axios) get pinned to a named vendor chunk, so they
+ *       cache well across deploys. Everything else — react-webcam,
+ *       Tesseract.js, OpenCV/jscanify, recharts, framer-motion, lucide-react —
+ *       is left to automatic chunking, because each is only ever reached from
+ *       one route-level React.lazy() chunk. A blocklist approach ("exclude
+ *       these heavy libs from the shared bucket") was tried first and broke
+ *       twice: framer-motion alone ships as 3 packages (framer-motion,
+ *       motion-dom, motion-utils) and missing just one silently pulls ~150KB
+ *       gzip into the chunk every page downloads, including the login page.
  *
  *  3. SOURCE MAPS      — 'hidden' mode: maps generated for error monitoring
  *                         tools but NOT linked in the HTML (not exposed to users).
@@ -45,25 +49,18 @@ export default defineConfig({
 
     rollupOptions: {
       output: {
-        // Tesseract.js (~5 MB) and react-webcam are only needed on the
-        // warranty form page. Isolating them means other pages never download
-        // these heavy libraries.
+        // Allowlist: only these are used on literally every route.
+        // node_modules/react/, node_modules/react-dom/ — the two paths that
+        // together make up React itself (react/jsx-runtime also lives under
+        // 'react/', so this correctly catches it too).
         manualChunks: (id) => {
-          if (id.includes('tesseract') || id.includes('Tesseract')) {
-            return 'vendor-tesseract';
-          }
-          if (id.includes('react-webcam')) {
-            return 'vendor-webcam';
-          }
-          if (id.includes('react-router') || id.includes('react-router-dom')) {
-            return 'vendor-router';
-          }
-          if (id.includes('/axios/')) {
-            return 'vendor-axios';
-          }
-          if (id.includes('node_modules')) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('node_modules/react-router')) return 'vendor-router';
+          if (id.includes('node_modules/axios')) return 'vendor-axios';
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
             return 'vendor-react';
           }
+          return undefined; // let automatic per-route chunking handle everything else
         },
       },
     },

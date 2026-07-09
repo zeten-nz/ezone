@@ -1,41 +1,43 @@
 /**
  * APPLICATION ROOT
  *
- * Production improvements applied here:
+ * Error Boundary architecture:
  *
- *  1. LAZY LOADING — Each page is loaded with React.lazy so Vite splits it
- *     into its own chunk. The browser downloads only the code for the current
- *     page, not the entire app bundle. Tesseract.js (scanner) is especially
- *     heavy (~5 MB) and was always downloaded on every page — now it loads
- *     only when the employee visits the warranty form.
+ *   GlobalErrorBoundary          ← full-screen fallback, catches provider crashes
+ *     Router
+ *       Suspense                 ← spinner during lazy-chunk download
+ *         per-route boundaries   ← inline fallback; a crash on one page
+ *           Page component         never unmounts the rest of the app
  *
- *  2. SUSPENSE — Wraps the lazy pages with a spinner fallback so there is
- *     a visible loading state during chunk download instead of a blank screen.
+ * Each page element is wrapped in its own <ErrorBoundary inline> so a runtime
+ * crash on /warranty-forms, for example, does NOT affect /dashboard.
+ * When a boundary catches, the user sees a "Try Again / Home" card within
+ * the viewport; they can navigate away via the browser's back button.
  *
- *  3. ERROR BOUNDARY — Catches any runtime error thrown by any page component
- *     and renders a user-friendly fallback instead of a white screen of death.
- *
- *  4. ROLE CONSTANTS — Role strings come from USER_ROLES constants, not magic
- *     string literals, so a typo won't silently break auth.
+ * API request failures are NOT handled here — they use page-level error
+ * state + the ErrorState component, not ErrorBoundary.
  */
 
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider }     from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { SidebarProvider }  from './context/SidebarContext';
 import ProtectedRoute       from './components/ProtectedRoute';
 import ErrorBoundary        from './components/ErrorBoundary';
 import { USER_ROLES }       from './config/constants';
+import { getHomePath }      from './config/navigation';
 
 // ── Lazy-loaded pages ─────────────────────────────────────────────────────────
-// Each import() becomes a separate Vite chunk — downloaded on demand.
-const Login                    = lazy(() => import('./pages/Login'));
-const EmployeeWarrantyFormModern = lazy(() => import('./pages/EmployeeWarrantyFormModern'));
-const EmployeeProfileModern    = lazy(() => import('./pages/EmployeeProfileModern'));
-const AdminDashboardModern     = lazy(() => import('./pages/AdminDashboardModern'));
-const AdminUsersModern         = lazy(() => import('./pages/AdminUsersModern'));
-const AdminWarrantyFormsModern = lazy(() => import('./pages/AdminWarrantyFormsModern'));
+const Login                         = lazy(() => import('./pages/Login'));
+const Register                      = lazy(() => import('./pages/Register'));
+const EmployeeWarrantyFormModern    = lazy(() => import('./pages/EmployeeWarrantyFormModern'));
+const EmployeeWarrantyHistoryModern = lazy(() => import('./pages/EmployeeWarrantyHistoryModern'));
+const EmployeeProfileModern         = lazy(() => import('./pages/EmployeeProfileModern'));
+const AdminDashboardModern          = lazy(() => import('./pages/AdminDashboardModern'));
+const AdminUsersModern              = lazy(() => import('./pages/AdminUsersModern'));
+const AdminWarrantyFormsModern      = lazy(() => import('./pages/AdminWarrantyFormsModern'));
+const AdminRegistrationRequestsModern = lazy(() => import('./pages/AdminRegistrationRequestsModern'));
 
 // ── Page loading fallback ─────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -44,33 +46,120 @@ const PageLoader = () => (
   </div>
 );
 
+// The bare "/" path used to unconditionally <Navigate to="/login" /> without
+// ever checking auth state — so a logged-in user landing on the root URL
+// (e.g. a fresh tab) was sent to the login page regardless of having a valid
+// session. This reads the real auth state and sends the user somewhere that
+// actually reflects it.
+const RootRedirect = () => {
+  const { user } = useAuth();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return <Navigate to={getHomePath(user.role)} replace />;
+};
+
 function App() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundary name="GlobalBoundary">
       <LanguageProvider>
         <AuthProvider>
           <SidebarProvider>
             <Router>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  <Route path="/login" element={<Login />} />
+                  {/* Public routes */}
+                  <Route
+                    path="/login"
+                    element={
+                      <ErrorBoundary name="LoginBoundary" inline>
+                        <Login />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/register"
+                    element={
+                      <ErrorBoundary name="RegisterBoundary" inline>
+                        <Register />
+                      </ErrorBoundary>
+                    }
+                  />
 
                   {/* Employee routes */}
                   <Route element={<ProtectedRoute role={USER_ROLES.EMPLOYEE} />}>
-                    <Route path="/warranty-form" element={<EmployeeWarrantyFormModern />} />
-                    <Route path="/profile"       element={<EmployeeProfileModern />} />
+                    <Route
+                      path="/warranty-form"
+                      element={
+                        <ErrorBoundary name="WarrantyFormBoundary" inline>
+                          <EmployeeWarrantyFormModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/warranty-history"
+                      element={
+                        <ErrorBoundary name="WarrantyHistoryBoundary" inline>
+                          <EmployeeWarrantyHistoryModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ErrorBoundary name="ProfileBoundary" inline>
+                          <EmployeeProfileModern />
+                        </ErrorBoundary>
+                      }
+                    />
                   </Route>
 
                   {/* Admin routes */}
                   <Route element={<ProtectedRoute role={USER_ROLES.ADMIN} />}>
-                    <Route path="/dashboard"      element={<AdminDashboardModern />} />
-                    <Route path="/users"          element={<AdminUsersModern />} />
-                    <Route path="/warranty-forms" element={<AdminWarrantyFormsModern />} />
-                    <Route path="/admin/profile"  element={<EmployeeProfileModern />} />
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ErrorBoundary name="DashboardBoundary" inline>
+                          <AdminDashboardModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/users"
+                      element={
+                        <ErrorBoundary name="UsersBoundary" inline>
+                          <AdminUsersModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/warranty-forms"
+                      element={
+                        <ErrorBoundary name="AdminWarrantyBoundary" inline>
+                          <AdminWarrantyFormsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/admin/profile"
+                      element={
+                        <ErrorBoundary name="AdminProfileBoundary" inline>
+                          <EmployeeProfileModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/registration-requests"
+                      element={
+                        <ErrorBoundary name="RegistrationRequestsBoundary" inline>
+                          <AdminRegistrationRequestsModern />
+                        </ErrorBoundary>
+                      }
+                    />
                   </Route>
 
-                  {/* Default redirect */}
-                  <Route path="/" element={<Navigate to="/login" replace />} />
+                  {/* Root path — must check auth state, not hardcode /login (see RootRedirect above) */}
+                  <Route path="/" element={<RootRedirect />} />
                 </Routes>
               </Suspense>
             </Router>

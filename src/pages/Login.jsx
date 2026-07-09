@@ -1,25 +1,51 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { motion } from 'framer-motion';
+import { Fuel } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import Toast from '../components/UI/Toast';
 import { useLanguage } from '../context/LanguageContext';
+import { buildLoginSchema } from '../validation/authSchemas';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [toast, setToast] = useState(null);
-  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // ProtectedRoute redirects here with { reason: 'expired' } when a 401
+  // forced the logout (as opposed to landing here fresh or via an explicit
+  // logout) — derived once at mount, not in an effect, since it's just
+  // reading the initial navigation state rather than syncing with anything.
+  const [toast, setToast] = useState(() =>
+    location.state?.reason === 'expired'
+      ? { type: 'info', message: t('sessionExpiredMessage') }
+      : null
+  );
 
+  // Clear the router history state right after reading it above, so a later
+  // refresh of /login doesn't keep re-showing the message.
+  useEffect(() => {
+    if (location.state?.reason === 'expired') {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(loginSchema), mode: 'onBlur' });
+
+  const onSubmit = async ({ username, password }) => {
     try {
       const response = await authAPI.login(username, password);
       const { token, user } = response.data;
@@ -32,72 +58,66 @@ const Login = () => {
         navigate('/warranty-form');
       }
     } catch (err) {
-      setToast({
-        type: 'error',
-        message: err.response?.data?.message || 'Login failed. Please try again.'
-      });
-    } finally {
-      setLoading(false);
+      setToast({ type: 'error', message: err.message });
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-neutral-50 flex items-center justify-center px-4">
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden">
-          <div className="px-8 py-12 border-b border-neutral-100 bg-gradient-to-r from-blue-600 to-blue-700">
-            <h1 className="text-4xl font-bold text-white mb-2">STAG</h1>
-            <p className="text-blue-100">{t('loginTitle')}</p>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="w-full max-w-md"
+      >
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center mb-4">
+            <Fuel className="w-5 h-5 text-white" />
           </div>
-
-          <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <Input
-                label="Username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-                required
-              />
-
-              <Input
-                label="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                showPasswordToggle
-                required
-              />
-
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  loading={loading}
-                  className="w-full"
-                >
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </div>
-            </form>
-
-            
-          </div>
-
-          <div className="px-8 py-4 bg-neutral-50 border-t border-neutral-100 text-center text-xs text-neutral-600">
-            © 2026 STAG {t('loginTitle')}
-          </div>
+          <h1 className="text-xl font-semibold text-neutral-900">STAG</h1>
+          <p className="text-sm text-neutral-500 mt-1">{t('loginTitle')}</p>
         </div>
-      </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+            <Input
+              label={t('username')}
+              type="text"
+              placeholder={t('usernamePlaceholder')}
+              error={errors.username?.message}
+              {...register('username')}
+            />
+
+            <Input
+              label={t('password')}
+              type="password"
+              placeholder={t('passwordPlaceholder')}
+              showPasswordToggle
+              error={errors.password?.message}
+              {...register('password')}
+            />
+
+            <div className="pt-2">
+              <Button type="submit" loading={isSubmitting} className="w-full">
+                {isSubmitting ? t('signingIn') : t('signIn')}
+              </Button>
+            </div>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-neutral-500">
+            {t('dontHaveAccount')}{' '}
+            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-700">
+              {t('signUp')}
+            </Link>
+          </p>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-neutral-400">
+          &copy; 2026 STAG {t('loginTitle')}
+        </p>
+      </motion.div>
     </div>
   );
 };

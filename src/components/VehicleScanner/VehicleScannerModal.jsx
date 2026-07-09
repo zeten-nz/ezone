@@ -1,92 +1,146 @@
-import { useRef, useState } from 'react';
-import Webcam from 'react-webcam';
-import { recognize } from 'tesseract.js';
-import { MdCameraAlt, MdCheck, MdArrowForward, MdHourglassBottom } from 'react-icons/md';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { MdCheck, MdArrowForward, MdWarning, MdRefresh } from 'react-icons/md';
 import { Modal } from '../UI/Modal';
 import Button from '../UI/Button';
-import { parseFrontSide, parseBackSide } from './parseGuvohnoma';
+import CameraView from './Camera/CameraView';
+import { parseFrontSide, parseBackSide } from './Parser/fieldParser';
+import { isLowConfidence } from './Confidence/confidence';
+
+// Tesseract.js + OpenCV/jscanify (~8MB combined) are only needed once a scan
+// actually happens — dynamically imported here so the warranty form page
+// never fetches them just because this modal exists in its component tree.
+const loadPipeline = () => import('./ImageProcessing/pipeline');
+const loadOcr = () => import('./OCR/runOcr');
+const loadOcrEngine = () => import('./OCR/ocrEngine');
+
+const STAGE_LABELS = {
+  cropping: 'Hujjat chegarasi aniqlanmoqda...',
+  orienting: 'Yo\'nalishi tekshirilmoqda...',
+  enhancing: 'Tasvir sifati yaxshilanmoqda...',
+  ocr: 'Matn o\'qilmoqda...',
+};
+
+const FIELD_LABELS = {
+  vehicle_plate_number: 'Davlat raqami',
+  vehicle_brand: 'Brend',
+  vehicle_model: 'Model',
+  owner_full_name: 'Egasi',
+  vehicle_production_year: 'Ishlab chiqarish yili',
+  vehicle_vin: 'VIN raqami',
+  vehicle_engine_power: 'Dvigatel quvvati',
+};
+
+function FieldRow({ name, field, onChange }) {
+  const low = isLowConfidence(field);
+  return (
+    <div className={`rounded-lg border p-3 ${low ? 'border-amber-300 bg-amber-50' : 'border-green-200 bg-green-50'}`}>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-xs font-medium text-gray-600">{FIELD_LABELS[name] || name}</label>
+        {low ? (
+          <span className="flex items-center gap-1 text-xs text-amber-700">
+            <MdWarning className="w-3.5 h-3.5" /> Tekshiring
+          </span>
+        ) : (
+          <span className="text-xs text-green-700">{field.confidence}%</span>
+        )}
+      </div>
+      <input
+        type="text"
+        value={field.value}
+        onChange={(e) => onChange(name, e.target.value)}
+        className="w-full bg-white border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  );
+}
 
 const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
   const webcamRef = useRef(null);
-  const [step, setStep] = useState(1);
-  const [scanning, setScanning] = useState(false);
-  const [frontData, setFrontData] = useState(null);
-  const [backData, setBackData] = useState(null);
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [ocrProgress, setOcrProgress] = useState(0);
-  const [extractedFields, setExtractedFields] = useState(null);
+  const [step, setStep] = useState(1); // 1 = front, 2 = back
+  const [phase, setPhase] = useState('camera'); // camera | processing | review | error
+  const [progressLabel, setProgressLabel] = useState('');
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [frontFields, setFrontFields] = useState(null);
+  const [backFields, setBackFields] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [previewSrc, setPreviewSrc] = useState(null);
 
-  const handleScan = async () => {
-    if (!webcamRef.current) return;
+  useEffect(() => {
+    // Free the (large) Tesseract worker + wasm memory once the modal is closed.
+    if (!isOpen) loadOcrEngine().then(({ terminateWorker }) => terminateWorker());
+  }, [isOpen]);
 
-    setScanning(true);
-    setOcrProgress(0);
-    setCapturedImage(null);
-    setExtractedFields(null);
+  const handleCapture = useCallback(
+    async (rawCanvas) => {
+      setPhase('processing');
+      setProgressPercent(0);
+      setErrorMessage('');
 
-    try {
-      const imageSrc = webcamRef.current.getScreenshot();
-      setCapturedImage(imageSrc);
+      try {
+        const [{ processCapturedImage }, { runDualPassOcr }] = await Promise.all([loadPipeline(), loadOcr()]);
 
-      const result = await recognize(imageSrc, 'eng+uzb', {
-        logger: (m) => {
-          if (m.progress) {
-            setOcrProgress(Math.round(m.progress * 100));
-          }
-        },
-      });
+        const processed = await processCapturedImage(rawCanvas, {
+          onStage: (stage) => {
+            setProgressLabel(STAGE_LABELS[stage]);
+            setProgressPercent(stage === 'cropping' ? 10 : stage === 'orienting' ? 25 : 40);
+          },
+        });
+        setPreviewSrc(processed.oriented.toDataURL('image/jpeg', 0.85));
 
-      const text = result.data.text;
+        setProgressLabel(STAGE_LABELS.ocr);
+        const ocrData = await runDualPassOcr(processed, (pct) => {
+          setProgressPercent(40 + Math.round(pct * 0.6));
+        });
 
-      let parsed;
-      if (step === 1) {
-        parsed = parseFrontSide(text);
-        setFrontData(parsed);
-      } else {
-        parsed = parseBackSide(text);
-        setBackData(parsed);
+        const { fields } = step === 1 ? parseFrontSide(ocrData) : parseBackSide(ocrData);
+        if (step === 1) setFrontFields(fields);
+        else setBackFields(fields);
+
+        setPhase('review');
+      } catch (err) {
+        console.error('[VehicleScanner] scan failed', err);
+        setErrorMessage('Skanerlab bo\'lmadi. Yorug\'lik va fokusni tekshirib, qayta urinib ko\'ring.');
+        setPhase('error');
       }
+    },
+    [step]
+  );
 
-      setExtractedFields(parsed);
-      setScanning(false);
-    } catch {
-      setScanning(false);
-      setExtractedFields({ error: 'Skanerlab bo\'lmadi. Qayta urinib ko\'ring.' });
-    }
+  const handleFieldChange = (name, value) => {
+    const setFields = step === 1 ? setFrontFields : setBackFields;
+    setFields((prev) => ({
+      ...prev,
+      [name]: { ...prev[name], value, confidence: 100, source: 'manual' },
+    }));
   };
 
-  const handleRetry = () => {
-    setCapturedImage(null);
-    setExtractedFields(null);
-    setOcrProgress(0);
+  const handleRescan = () => {
+    setPhase('camera');
+    setPreviewSrc(null);
+    setErrorMessage('');
+    setProgressPercent(0);
   };
 
   const handleNext = () => {
-    if (step === 1) {
-      setStep(2);
-      setCapturedImage(null);
-      setExtractedFields(null);
-      setOcrProgress(0);
-    }
+    setStep(2);
+    setPhase('camera');
+    setPreviewSrc(null);
   };
 
   const handleConfirm = () => {
-    const allData = {
-      ...frontData,
-      ...backData,
-    };
-    onComplete(allData);
+    const flatten = (fields) => Object.fromEntries(Object.entries(fields || {}).map(([k, f]) => [k, f.value]));
+    onComplete({ ...flatten(frontFields), ...flatten(backFields) });
     resetModal();
   };
 
   const resetModal = () => {
     setStep(1);
-    setScanning(false);
-    setFrontData(null);
-    setBackData(null);
-    setCapturedImage(null);
-    setOcrProgress(0);
-    setExtractedFields(null);
+    setPhase('camera');
+    setFrontFields(null);
+    setBackFields(null);
+    setPreviewSrc(null);
+    setErrorMessage('');
+    setProgressPercent(0);
   };
 
   const handleClose = () => {
@@ -94,29 +148,28 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
     onClose();
   };
 
+  const currentFields = step === 1 ? frontFields : backFields;
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="2xl" title="Guvohnomani Skanerla">
       <div className="space-y-4">
-        {/* Step indicator */}
         <div className="flex gap-4 items-center justify-center">
           <button
-            onClick={() => step !== 1 && (setStep(1), handleRetry())}
+            onClick={() => step !== 1 && setStep(1)}
             className={`px-4 py-2 rounded-lg font-medium transition ${
-              step === 1
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'
+              step === 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'
             }`}
           >
             1. Oldingi tomon
           </button>
           <span className="text-gray-400">|</span>
           <button
-            onClick={() => step !== 2 && frontData && (setStep(2), handleRetry())}
-            disabled={!frontData}
+            onClick={() => step !== 2 && frontFields && setStep(2)}
+            disabled={!frontFields}
             className={`px-4 py-2 rounded-lg font-medium transition ${
               step === 2
                 ? 'bg-blue-600 text-white'
-                : frontData
+                : frontFields
                 ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
@@ -125,132 +178,71 @@ const VehicleScannerModal = ({ isOpen, onClose, onComplete }) => {
           </button>
         </div>
 
-        {/* Camera or preview */}
-        <div className="bg-black rounded-lg overflow-hidden h-80 flex items-center justify-center">
-          {!capturedImage ? (
-            <Webcam
-              ref={webcamRef}
-              screenshotFormat="image/jpeg"
-              videoConstraints={{ facingMode: 'environment' }}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            <img src={capturedImage} alt="captured" className="w-full h-full object-cover" />
-          )}
-        </div>
+        {phase === 'camera' && <CameraView webcamRef={webcamRef} onCapture={handleCapture} />}
 
-        {/* Instructions */}
-        {!capturedImage && (
-          <p className="text-center text-gray-600 text-sm">
-            {step === 1
-              ? 'Kamerani guvohnomaning oldingi tomoniga yo\'naltiring va "Skanerla" tugmasini bosing'
-              : 'Kamerani guvohnomaning orqa tomoniga yo\'naltiring va "Skanerla" tugmasini bosing'}
-          </p>
-        )}
-
-        {/* OCR Progress */}
-        {scanning && (
-          <div className="space-y-2">
+        {phase === 'processing' && (
+          <div className="space-y-3">
+            {previewSrc && (
+              <img src={previewSrc} alt="processing preview" className="w-full h-56 object-contain bg-gray-100 rounded-lg" />
+            )}
             <div className="flex justify-between text-sm text-gray-600">
-              <span>Tekstni o'qiyapman...</span>
-              <span>{ocrProgress}%</span>
+              <span>{progressLabel}</span>
+              <span>{progressPercent}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${ocrProgress}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
         )}
 
-        {/* Extracted fields preview */}
-        {extractedFields && !extractedFields.error && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-            <h4 className="font-semibold text-green-900 text-sm">Topilgan ma'lumotlar:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              {Object.entries(extractedFields).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <span className="text-gray-700">{formatFieldName(key)}:</span>
-                  <span className="font-medium text-gray-900">{value || '—'}</span>
-                </div>
+        {phase === 'error' && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+            <p className="text-red-700 text-sm">{errorMessage}</p>
+            <Button onClick={handleRescan} className="w-full">
+              <MdRefresh className="w-4 h-4 mr-1 inline" /> Qayta urinish
+            </Button>
+          </div>
+        )}
+
+        {phase === 'review' && currentFields && (
+          <div className="space-y-3">
+            {previewSrc && (
+              <img src={previewSrc} alt="captured" className="w-full h-40 object-contain bg-gray-100 rounded-lg" />
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {Object.entries(currentFields).map(([name, field]) => (
+                <FieldRow key={name} name={name} field={field} onChange={handleFieldChange} />
               ))}
             </div>
-          </div>
-        )}
-
-        {extractedFields?.error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700 text-sm">{extractedFields.error}</p>
-          </div>
-        )}
-
-        {/* Buttons */}
-        <div className="flex gap-3">
-          {!capturedImage ? (
-            <>
-              <Button
-                variant="secondary"
-                onClick={handleClose}
-                className="flex-1"
-              >
-                Bekor qilish
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={handleRescan} className="flex-1">
+                <MdRefresh className="w-4 h-4 mr-1 inline" /> Qayta skanerla
               </Button>
-              <Button
-                onClick={handleScan}
-                disabled={scanning}
-                className="flex-1"
-              >
-                {scanning
-                  ? <><MdHourglassBottom className="w-4 h-4 mr-1 inline" />Skanerlanmoqda...</>
-                  : <><MdCameraAlt className="w-4 h-4 mr-1 inline" />Skanerla</>
-                }
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="secondary"
-                onClick={handleRetry}
-                className="flex-1"
-              >
-                Qayta skanerla
-              </Button>
-              {step === 1 && frontData && (
-                <Button
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+              {step === 1 && (
+                <Button onClick={handleNext} className="flex-1">
                   Keyingisi <MdArrowForward className="w-4 h-4 ml-1 inline" />
                 </Button>
               )}
               {step === 2 && (
-                <Button
-                  onClick={handleConfirm}
-                  className="flex-1"
-                >
+                <Button onClick={handleConfirm} className="flex-1">
                   <MdCheck className="w-4 h-4 mr-1 inline" /> Tasdiqlash
                 </Button>
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
+
+        {phase === 'camera' && (
+          <Button variant="ghost" onClick={handleClose} className="w-full">
+            Bekor qilish
+          </Button>
+        )}
       </div>
     </Modal>
   );
 };
-
-function formatFieldName(key) {
-  const names = {
-    vehicle_brand: 'Brend',
-    vehicle_model: 'Model',
-    vehicle_plate_number: 'Raqami',
-    vehicle_vin: 'VIN raqami',
-    vehicle_production_year: 'Ishlab chiqarish yili',
-    vehicle_engine_power: 'Dvigatel quvvati',
-    owner_full_name: 'Egasi',
-  };
-  return names[key] || key;
-}
 
 export default VehicleScannerModal;

@@ -1,5 +1,5 @@
 ﻿
-export const Card = ({ children, className = '', variant = 'default' }) => {
+export const Card = ({ children, className = '', variant = 'default', ...props }) => {
   const variants = {
     default: 'bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200',
     elevated: 'bg-white border border-neutral-100 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200',
@@ -7,7 +7,7 @@ export const Card = ({ children, className = '', variant = 'default' }) => {
   };
 
   return (
-    <div className={`${variants[variant]} ${className}`}>
+    <div className={`${variants[variant]} ${className}`} {...props}>
       {children}
     </div>
   );

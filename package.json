@@ -10,13 +10,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@hookform/resolvers": "^5.4.0",
+    "@techstark/opencv-js": "^5.0.0-release.1",
     "axios": "^1.6.5",
+    "framer-motion": "^12.42.2",
+    "jscanify": "^1.4.2",
+    "lucide-react": "^1.23.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-hook-form": "^7.81.0",
     "react-icons": "^5.6.0",
     "react-router-dom": "^6.20.1",
     "react-webcam": "^7.2.0",
-    "tesseract.js": "^7.0.0"
+    "recharts": "^3.9.2",
+    "tesseract.js": "^7.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
