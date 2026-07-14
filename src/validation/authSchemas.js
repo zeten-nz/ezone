@@ -26,7 +26,7 @@ export const buildRegisterSchema = (t) =>
       last_name: z.string().trim().min(1, t('valLastNameRequired')),
       region: z.string().trim().min(1, t('valRegionRequired')),
       district: z.string().trim().min(1, t('valDistrictRequired')),
-      branch_code: z.string().trim().min(1, t('valBranchCodeRequired')),
+      branch_id: z.string().trim().min(1, t('valBranchRequired')),
       phone: z.string().regex(PHONE_REGEX, t('valPhoneInvalid')),
       username: z.string().trim().min(3, t('valUsernameMinLength')),
       password: z.string().min(6, t('valPasswordMinLength')),

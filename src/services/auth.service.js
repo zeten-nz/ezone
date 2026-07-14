@@ -12,13 +12,13 @@ export const authService = {
   // enough for axios to recognize the FormData payload — axios then resets
   // Content-Type itself so the browser fills in the correct multipart
   // boundary (see node_modules/axios/lib/helpers/resolveConfig.js).
-  register: ({ first_name, last_name, region, district, branch_code, phone, username, password, photo }) => {
+  register: ({ first_name, last_name, region, district, branch_id, phone, username, password, photo }) => {
     const formData = new FormData();
     formData.append('first_name', first_name);
     formData.append('last_name', last_name);
     formData.append('region', region);
     formData.append('district', district);
-    formData.append('branch_code', branch_code);
+    formData.append('branch_id', branch_id);
     formData.append('phone', phone);
     formData.append('username', username);
     formData.append('password', password);

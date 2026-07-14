@@ -16,6 +16,7 @@ import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
 import WarrantyDetailModal from '../components/Warranty/WarrantyDetailModal';
 import WarrantyFormFields, { validateWarrantyForm } from '../components/WarrantyFormFields';
+import { toEditableEquipment } from '../config/equipmentCategories';
 
 const EDIT_WINDOW_HOURS = 24;
 
@@ -56,6 +57,7 @@ const EmployeeWarrantyHistoryModern = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editScannerOpen, setEditScannerOpen] = useState(false);
   const [editFormId, setEditFormId] = useState(null);
+  const [editLegacyEquipment, setEditLegacyEquipment] = useState(null);
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -93,50 +95,39 @@ const EmployeeWarrantyHistoryModern = () => {
   const handleEditOpen = (form) => {
     setEditFormId(form.id);
     setEditFormData({
-      region:                       form.region                       ?? '',
-      city:                         form.city                         ?? '',
-      district:                     form.district                     ?? '',
-      organization_name:            form.organization_name            ?? '',
-      organization_phone:           form.organization_phone           ?? '',
-      installer_full_name:          form.installer_full_name          ?? '',
       warranty_book_number:         form.warranty_book_number         ?? '',
+      submission_uuid:              form.submission_uuid,
       installation_date:            toInputDate(form.installation_date),
-      vehicle_brand:                form.vehicle_brand                ?? '',
-      vehicle_model:                form.vehicle_model                ?? '',
+      fuel_type:                    form.fuel_type                    ?? null,
+      vehicle_name:                 form.vehicle_name                 ?? '',
+      car_id:                       form.car_id                       ?? null,
       vehicle_production_year:      form.vehicle_production_year      ?? new Date().getFullYear(),
       vehicle_plate_number:         form.vehicle_plate_number         ?? '',
       vehicle_vin:                  form.vehicle_vin                  ?? '',
-      vehicle_engine_volume:        form.vehicle_engine_volume        ?? '',
-      vehicle_engine_power:         form.vehicle_engine_power         ?? '',
       vehicle_mileage:              form.vehicle_mileage              ?? '',
       owner_full_name:              form.owner_full_name              ?? '',
       owner_phone:                  form.owner_phone                  ?? '',
-      reducer_fuel_type:            form.reducer_fuel_type            ?? 'LPG',
-      reducer_manufacturer:         form.reducer_manufacturer         ?? '',
-      reducer_serial_number:        form.reducer_serial_number        ?? '',
-      cylinder_fuel_type:           form.cylinder_fuel_type           ?? 'LPG',
-      cylinder_manufacturer:        form.cylinder_manufacturer        ?? '',
-      cylinder_serial_number:       form.cylinder_serial_number       ?? '',
-      stag_controller_manufacturer: form.stag_controller_manufacturer ?? '',
-      stag_controller_serial_number:form.stag_controller_serial_number?? '',
-      injector_rail_manufacturer:   form.injector_rail_manufacturer   ?? '',
-      injector_rail_serial_number:  form.injector_rail_serial_number  ?? '',
+      equipment:                    toEditableEquipment(form.equipment),
     });
     setEditErrors({});
+
+    // A historical row recorded before either equipment redesign existed
+    // has no `equipment` rows but still has the original free-text fields
+    // populated — show them read-only rather than making them silently
+    // vanish (see warrantyDTO.js's legacy_equipment).
+    setEditLegacyEquipment(!form.equipment?.length ? form.legacy_equipment : null);
   };
 
   const handleEditClose = () => {
     setEditFormId(null);
     setEditFormData(null);
     setEditErrors({});
+    setEditLegacyEquipment(null);
   };
 
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData((prev) => {
-      if (name === 'region') return { ...prev, [name]: value, city: '', district: '' };
-      return { ...prev, [name]: value };
-    });
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
     if (editErrors[name]) setEditErrors((prev) => ({ ...prev, [name]: null }));
   };
 
@@ -173,8 +164,8 @@ const EmployeeWarrantyHistoryModern = () => {
             <Car className="w-4 h-4 text-blue-600" />
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-neutral-900 truncate">{f.vehicle_brand} {f.vehicle_model}</p>
-            <p className="font-mono text-xs text-neutral-500">{f.vehicle_plate_number}</p>
+            <p className="font-medium text-neutral-900 truncate">{f.vehicle_name}</p>
+            <p className="font-mono text-xs text-neutral-500">{f.vehicle_plate_number || '—'}</p>
           </div>
         </div>
       ),
@@ -228,8 +219,8 @@ const EmployeeWarrantyHistoryModern = () => {
             <Car className="w-4 h-4 text-blue-600" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium text-neutral-900">{form.vehicle_brand} {form.vehicle_model}</p>
-            <p className="font-mono text-xs text-neutral-500 mt-0.5">{form.vehicle_plate_number}</p>
+            <p className="font-medium text-neutral-900">{form.vehicle_name}</p>
+            <p className="font-mono text-xs text-neutral-500 mt-0.5">{form.vehicle_plate_number || '—'}</p>
           </div>
           {remaining > 0 && (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md flex-shrink-0">
@@ -349,10 +340,12 @@ const EmployeeWarrantyHistoryModern = () => {
             <WarrantyFormFields
               formData={editFormData}
               onChange={handleEditInputChange}
+              onEquipmentChange={(equipment) => setEditFormData((prev) => ({ ...prev, equipment }))}
               errors={editErrors}
               scannerOpen={editScannerOpen}
               setScannerOpen={setEditScannerOpen}
               onScannerComplete={(data) => setEditFormData((prev) => ({ ...prev, ...data }))}
+              legacyEquipment={editLegacyEquipment}
             />
             <div className="flex gap-3 justify-end pt-2">
               <Button variant="secondary" type="button" onClick={handleEditClose}>

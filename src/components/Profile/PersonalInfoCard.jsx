@@ -53,7 +53,7 @@ const PersonalInfoCard = ({ profile, t, language }) => {
           <InfoField icon={Phone} label={t('phone')} value={profile.phone} />
           <InfoField icon={MapPin} label={t('region')} value={profile.region} />
           <InfoField icon={MapPin} label={t('district')} value={profile.district} />
-          <InfoField icon={Building2} label={t('branchCode')} value={profile.branch_code} />
+          <InfoField icon={Building2} label={t('branch')} value={profile.branch_name || profile.branch_code} />
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
               <ShieldCheck className="w-4 h-4 text-neutral-500" />

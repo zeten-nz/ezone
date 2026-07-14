@@ -17,6 +17,10 @@ import { warrantyService }             from './warranty.service';
 import { dashboardService }            from './dashboard.service';
 import { exportService }               from './export.service';
 import { registrationRequestsService } from './registrationRequests.service';
+import { branchesService }             from './branches.service';
+import { productsService }             from './products.service';
+import { reportsService }              from './reports.service';
+import { carsService }                 from './cars.service';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
@@ -49,6 +53,7 @@ export const warrantyAPI = {
   getFormDetail: (formId)                   => warrantyService.getById(formId),
   deleteForm:    (formId)                   => warrantyService.delete(formId),
   searchForms:   (search, filterType)       => warrantyService.search(search, filterType),
+  retrySync:     (formId)                   => warrantyService.retrySync(formId),
 };
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -70,6 +75,41 @@ export const registrationRequestsAPI = {
   getPhotoBlob:  (id)           => registrationRequestsService.getPhotoBlob(id),
   approve:       (id)           => registrationRequestsService.approve(id),
   reject:        (id, notes)    => registrationRequestsService.reject(id, notes),
+};
+
+// ── Branches (admin) ─────────────────────────────────────────────────────────
+export const branchAPI = {
+  getPublic: ()                    => branchesService.getPublic(),
+  getAll:    ()                    => branchesService.getAll(),
+  create:    (data)                => branchesService.create(data),
+  update:    (branchId, data)      => branchesService.update(branchId, data),
+  disable:   (branchId)            => branchesService.disable(branchId),
+  enable:    (branchId)            => branchesService.enable(branchId),
+};
+
+// ── Products (admin CRUD; search/brands usable by any authenticated role) ───
+export const productAPI = {
+  getAll:     (page, limit, search, category)          => productsService.getAll(page, limit, search, category),
+  search:     (query, equipmentType, brand, fuelType)  => productsService.search(query, equipmentType, brand, fuelType),
+  getBrands:  (equipmentType)                           => productsService.getBrands(equipmentType),
+  create:     (data)                                    => productsService.create(data),
+  update:     (productId, data)                         => productsService.update(productId, data),
+  activate:   (productId)                               => productsService.activate(productId),
+  deactivate: (productId)                               => productsService.deactivate(productId),
+  delete:     (productId)                               => productsService.delete(productId),
+};
+
+// ── Reports (admin) ──────────────────────────────────────────────────────────
+export const reportsAPI = {
+  getTopInstallers:     (period, limit)     => reportsService.getTopInstallers(period, limit),
+  getMonthlyActivity:   (year, employeeId)  => reportsService.getMonthlyActivity(year, employeeId),
+  getProductsInstalled: (category)          => reportsService.getProductsInstalled(category),
+  getBranchRanking:     (period)            => reportsService.getBranchRanking(period),
+};
+
+// ── Vehicle catalog (any authenticated role) ─────────────────────────────────
+export const carAPI = {
+  search: (query) => carsService.search(query),
 };
 
 // Re-export the raw client for edge cases (not for general component use)

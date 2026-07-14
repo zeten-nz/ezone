@@ -53,14 +53,14 @@ const RecentSubmissions = ({ forms, language, emptyTitle, emptyDescription, labe
                       <Car className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-neutral-900 truncate">{form.vehicle_brand} {form.vehicle_model}</p>
-                      <p className="font-mono text-xs text-neutral-500">{form.vehicle_plate_number}</p>
+                      <p className="font-medium text-neutral-900 truncate">{form.vehicle_name || `${form.vehicle_brand || ''} ${form.vehicle_model || ''}`.trim()}</p>
+                      <p className="font-mono text-xs text-neutral-500">{form.vehicle_plate_number || '—'}</p>
                     </div>
                   </div>
                 </td>
                 <td className="py-3 px-2 text-neutral-700">{form.owner_full_name}</td>
                 <td className="py-3 px-2 text-neutral-700">{form.employee_name}</td>
-                <td className="py-3 px-2"><FuelBadge type={form.reducer_fuel_type} /></td>
+                <td className="py-3 px-2"><FuelBadge type={form.reducer_fuel_type_resolved} /></td>
                 <td className="py-3 px-2 text-right text-neutral-500 whitespace-nowrap">
                   {formatRelativeTime(form.created_at, language)}
                 </td>
@@ -79,10 +79,10 @@ const RecentSubmissions = ({ forms, language, emptyTitle, emptyDescription, labe
                 <Car className="w-4 h-4 text-blue-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-neutral-900">{form.vehicle_brand} {form.vehicle_model}</p>
-                <p className="font-mono text-xs text-neutral-500 mt-0.5">{form.vehicle_plate_number}</p>
+                <p className="font-medium text-neutral-900">{form.vehicle_name || `${form.vehicle_brand || ''} ${form.vehicle_model || ''}`.trim()}</p>
+                <p className="font-mono text-xs text-neutral-500 mt-0.5">{form.vehicle_plate_number || '—'}</p>
               </div>
-              <FuelBadge type={form.reducer_fuel_type} />
+              <FuelBadge type={form.reducer_fuel_type_resolved} />
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div>

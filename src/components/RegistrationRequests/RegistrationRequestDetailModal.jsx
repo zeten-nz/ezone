@@ -37,7 +37,7 @@ const RegistrationRequestDetailModal = ({ isOpen, onClose, request, t, language 
           <Field label={t('phone')} value={request.phone} />
           <Field label={t('region')} value={request.region} />
           <Field label={t('district')} value={request.district} />
-          <Field label={t('branchCode')} value={request.branch_code} />
+          <Field label={t('branchCode')} value={request.branch_name || request.branch_code} />
           <Field
             label={t('createdDate')}
             value={new Date(request.created_at).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'uz-UZ', {

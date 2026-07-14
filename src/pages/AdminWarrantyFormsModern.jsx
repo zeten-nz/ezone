@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Car, FileSearch } from 'lucide-react';
+import { Search, Car, FileSearch, RefreshCw } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { warrantyAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -14,8 +14,12 @@ import { SkeletonTable } from '../components/UI/Skeleton';
 import ErrorState from '../components/UI/ErrorState';
 import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
+import StatusBadge from '../components/UI/StatusBadge';
 import WarrantyDetailModal from '../components/Warranty/WarrantyDetailModal';
 import WarrantyFormFields, { validateWarrantyForm } from '../components/WarrantyFormFields';
+import { toEditableEquipment } from '../config/equipmentCategories';
+import { getErrorMessage } from '../config/errorCodes';
+import { extractSyncErrorCode } from '../utils/syncErrorCode';
 
 // MySQL DATE/DATETIME → YYYY-MM-DD for <input type="date">
 const toInputDate = (val) => {
@@ -41,6 +45,7 @@ const AdminWarrantyFormsModern = () => {
   const [selectedForm, setSelectedForm] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [retrySyncConfirm, setRetrySyncConfirm] = useState(null);
   const [toast, setToast] = useState(null);
 
   // ── Edit modal state ─────────────────────────────────────────────────────────
@@ -49,6 +54,7 @@ const AdminWarrantyFormsModern = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editScannerOpen, setEditScannerOpen] = useState(false);
   const [editFormId, setEditFormId] = useState(null);
+  const [editLegacyEquipment, setEditLegacyEquipment] = useState(null);
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -89,6 +95,18 @@ const AdminWarrantyFormsModern = () => {
     }
   };
 
+  const handleRetrySync = async () => {
+    if (!retrySyncConfirm) return;
+    try {
+      await warrantyAPI.retrySync(retrySyncConfirm);
+      setToast({ type: 'success', message: t('retrySyncSuccess') });
+      setRetrySyncConfirm(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    }
+  };
+
   const handleViewDetail = async (formId) => {
     try {
       const response = await warrantyAPI.getFormDetail(formId);
@@ -103,50 +121,39 @@ const AdminWarrantyFormsModern = () => {
   const handleEditOpen = (form) => {
     setEditFormId(form.id);
     setEditFormData({
-      region:                        form.region                        ?? '',
-      city:                          form.city                          ?? '',
-      district:                      form.district                      ?? '',
-      organization_name:             form.organization_name             ?? '',
-      organization_phone:            form.organization_phone            ?? '',
-      installer_full_name:           form.installer_full_name           ?? '',
       warranty_book_number:          form.warranty_book_number          ?? '',
+      submission_uuid:               form.submission_uuid,
       installation_date:             toInputDate(form.installation_date),
-      vehicle_brand:                 form.vehicle_brand                 ?? '',
-      vehicle_model:                 form.vehicle_model                 ?? '',
+      fuel_type:                     form.fuel_type                     ?? null,
+      vehicle_name:                  form.vehicle_name                  ?? '',
+      car_id:                        form.car_id                        ?? null,
       vehicle_production_year:       form.vehicle_production_year       ?? new Date().getFullYear(),
       vehicle_plate_number:          form.vehicle_plate_number          ?? '',
       vehicle_vin:                   form.vehicle_vin                   ?? '',
-      vehicle_engine_volume:         form.vehicle_engine_volume         ?? '',
-      vehicle_engine_power:          form.vehicle_engine_power          ?? '',
       vehicle_mileage:               form.vehicle_mileage               ?? '',
       owner_full_name:               form.owner_full_name               ?? '',
       owner_phone:                   form.owner_phone                   ?? '',
-      reducer_fuel_type:             form.reducer_fuel_type             ?? 'LPG',
-      reducer_manufacturer:          form.reducer_manufacturer          ?? '',
-      reducer_serial_number:         form.reducer_serial_number         ?? '',
-      cylinder_fuel_type:            form.cylinder_fuel_type            ?? 'LPG',
-      cylinder_manufacturer:         form.cylinder_manufacturer         ?? '',
-      cylinder_serial_number:        form.cylinder_serial_number        ?? '',
-      stag_controller_manufacturer:  form.stag_controller_manufacturer  ?? '',
-      stag_controller_serial_number: form.stag_controller_serial_number ?? '',
-      injector_rail_manufacturer:    form.injector_rail_manufacturer    ?? '',
-      injector_rail_serial_number:   form.injector_rail_serial_number   ?? '',
+      equipment:                     toEditableEquipment(form.equipment),
     });
     setEditErrors({});
+
+    // A historical row recorded before either equipment redesign existed
+    // has no `equipment` rows but still has the original free-text fields
+    // populated — show them read-only rather than making them silently
+    // vanish (see warrantyDTO.js's legacy_equipment).
+    setEditLegacyEquipment(!form.equipment?.length ? form.legacy_equipment : null);
   };
 
   const handleEditClose = () => {
     setEditFormId(null);
     setEditFormData(null);
     setEditErrors({});
+    setEditLegacyEquipment(null);
   };
 
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData((prev) => {
-      if (name === 'region') return { ...prev, [name]: value, city: '', district: '' };
-      return { ...prev, [name]: value };
-    });
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
     if (editErrors[name]) setEditErrors((prev) => ({ ...prev, [name]: null }));
   };
 
@@ -184,8 +191,8 @@ const AdminWarrantyFormsModern = () => {
             <Car className="w-4 h-4 text-blue-600" />
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-neutral-900 truncate">{f.vehicle_brand} {f.vehicle_model}</p>
-            <p className="font-mono text-xs text-neutral-500">{f.vehicle_plate_number}</p>
+            <p className="font-medium text-neutral-900 truncate">{f.vehicle_name}</p>
+            <p className="font-mono text-xs text-neutral-500">{f.vehicle_plate_number || '—'}</p>
           </div>
         </div>
       ),
@@ -197,12 +204,33 @@ const AdminWarrantyFormsModern = () => {
       header: t('date'),
       render: (f) => new Date(f.created_at).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'uz-UZ', { year: 'numeric', month: 'short', day: 'numeric' }),
     },
+    {
+      key: 'syncStatus',
+      header: t('syncStatus'),
+      render: (f) => {
+        const code = extractSyncErrorCode(f.easygas_last_error);
+        const reason = f.easygas_sync_status === 'FAILED' && code ? getErrorMessage(code, null, language) : null;
+        return (
+          <div className="max-w-[200px]">
+            <StatusBadge status={`SYNC_${f.easygas_sync_status}`} />
+            {reason && (
+              <p className="text-xs text-neutral-500 mt-1 truncate" title={f.easygas_last_error}>{reason}</p>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   const renderActions = (form) => (
     <>
       <Button size="sm" variant="outline" onClick={() => handleViewDetail(form.id)}>{t('view')}</Button>
       <Button size="sm" variant="secondary" onClick={() => handleEditOpen(form)}>{t('editWarranty')}</Button>
+      {form.easygas_sync_status === 'FAILED' && (
+        <Button size="sm" variant="outline" icon={RefreshCw} onClick={() => setRetrySyncConfirm(form.id)}>
+          {t('retrySync')}
+        </Button>
+      )}
       <Button size="sm" variant="danger" onClick={() => setDeleteConfirm(form.id)}>{t('delete')}</Button>
     </>
   );
@@ -214,8 +242,8 @@ const AdminWarrantyFormsModern = () => {
           <Car className="w-4 h-4 text-blue-600" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-neutral-900">{form.vehicle_brand} {form.vehicle_model}</p>
-          <p className="font-mono text-xs text-neutral-500 mt-0.5">{form.vehicle_plate_number}</p>
+          <p className="font-medium text-neutral-900">{form.vehicle_name}</p>
+          <p className="font-mono text-xs text-neutral-500 mt-0.5">{form.vehicle_plate_number || '—'}</p>
         </div>
         <span className="text-xs text-neutral-400">#{form.id}</span>
       </div>
@@ -322,7 +350,6 @@ const AdminWarrantyFormsModern = () => {
         isOpen={showDetail}
         onClose={() => setShowDetail(false)}
         form={selectedForm}
-        employeeName={selectedForm?.employee_name}
         t={t}
         language={language}
       />
@@ -334,10 +361,12 @@ const AdminWarrantyFormsModern = () => {
             <WarrantyFormFields
               formData={editFormData}
               onChange={handleEditInputChange}
+              onEquipmentChange={(equipment) => setEditFormData((prev) => ({ ...prev, equipment }))}
               errors={editErrors}
               scannerOpen={editScannerOpen}
               setScannerOpen={setEditScannerOpen}
               onScannerComplete={(data) => setEditFormData((prev) => ({ ...prev, ...data }))}
+              legacyEquipment={editLegacyEquipment}
             />
             <div className="flex gap-3 justify-end pt-2">
               <Button variant="secondary" type="button" onClick={handleEditClose}>
@@ -360,6 +389,16 @@ const AdminWarrantyFormsModern = () => {
         message={t('deleteFormMessage')}
         confirmText={t('delete')}
         isDangerous
+      />
+
+      {/* ── Retry sync confirmation ──────────────────────────────────────────── */}
+      <ConfirmModal
+        isOpen={!!retrySyncConfirm}
+        onClose={() => setRetrySyncConfirm(null)}
+        onConfirm={handleRetrySync}
+        title={t('retrySyncConfirmTitle')}
+        message={t('retrySyncConfirmMessage')}
+        confirmText={t('retrySync')}
       />
     </ModernAdminLayout>
   );

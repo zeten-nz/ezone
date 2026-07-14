@@ -83,7 +83,7 @@ const Sidebar = () => {
               </div>
             )}
             <button
-              onClick={logout}
+              onClick={() => logout()}
               title={t('logout')}
               aria-label={t('logout')}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors flex-shrink-0"

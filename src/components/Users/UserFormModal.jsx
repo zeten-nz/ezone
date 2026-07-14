@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../UI/Input';
@@ -7,7 +7,7 @@ import PhoneInput from '../UI/PhoneInput';
 import Button from '../UI/Button';
 import { useLanguage } from '../../context/LanguageContext';
 import { buildCreateUserSchema, buildEditUserSchema } from '../../validation/userSchemas';
-import { BRANCHES } from '../../config/branches';
+import { branchAPI } from '../../services/api';
 
 /**
  * Rendered fresh on every open (parent only mounts this while its owning
@@ -18,10 +18,25 @@ import { BRANCHES } from '../../config/branches';
 const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
   const { t } = useLanguage();
   const isEditing = !!editingUser;
+  const [branches, setBranches] = useState([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await branchAPI.getAll();
+        setBranches(response.data);
+      } catch {
+        // Non-fatal — the Select just shows no options.
+      }
+    })();
+  }, []);
 
   const branchOptions = useMemo(
-    () => [{ value: '', label: t('selectPlaceholder') }, ...BRANCHES],
-    [t]
+    () => [
+      { value: '', label: t('selectPlaceholder') },
+      ...branches.map((b) => ({ value: b.id, label: `${b.name} (${b.code})` })),
+    ],
+    [t, branches]
   );
   const schema = useMemo(
     () => (isEditing ? buildEditUserSchema(t) : buildCreateUserSchema(t)),
@@ -41,7 +56,7 @@ const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
       username: editingUser?.username ?? '',
       password: '',
       phone: editingUser?.phone ?? '',
-      branch_code: editingUser?.branch_code ?? '',
+      branch_id: editingUser?.branch_id ?? '',
     },
   });
 
@@ -88,10 +103,10 @@ const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
       />
 
       <Controller
-        name="branch_code"
+        name="branch_id"
         control={control}
         render={({ field }) => (
-          <Select label={t('branchCode')} options={branchOptions} error={errors.branch_code?.message} {...field} />
+          <Select label={t('branchCode')} options={branchOptions} error={errors.branch_id?.message} {...field} />
         )}
       />
 

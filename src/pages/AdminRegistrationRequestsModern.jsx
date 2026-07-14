@@ -65,6 +65,7 @@ const AdminRegistrationRequestsModern = () => {
         r.last_name?.toLowerCase().includes(q) ||
         r.username?.toLowerCase().includes(q) ||
         r.phone?.toLowerCase().includes(q) ||
+        r.branch_name?.toLowerCase().includes(q) ||
         r.branch_code?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
       return matchesSearch && matchesStatus;
@@ -158,7 +159,7 @@ const AdminRegistrationRequestsModern = () => {
         </div>
       ),
     },
-    { key: 'branch', header: t('branchCode'), render: (r) => r.branch_code || '—' },
+    { key: 'branch', header: t('branchCode'), render: (r) => r.branch_name || r.branch_code || '—' },
     {
       key: 'created',
       header: t('createdDate'),
@@ -205,7 +206,7 @@ const AdminRegistrationRequestsModern = () => {
       </div>
       <dl className="grid grid-cols-2 gap-2 text-xs">
         <div><dt className="text-neutral-400">{t('phone')}</dt><dd className="text-neutral-700 font-medium truncate">{r.phone || '—'}</dd></div>
-        <div><dt className="text-neutral-400">{t('branchCode')}</dt><dd className="text-neutral-700 font-medium truncate">{r.branch_code || '—'}</dd></div>
+        <div><dt className="text-neutral-400">{t('branchCode')}</dt><dd className="text-neutral-700 font-medium truncate">{r.branch_name || r.branch_code || '—'}</dd></div>
       </dl>
       <div className="flex flex-wrap gap-2 pt-1">{renderActions(r)}</div>
     </div>

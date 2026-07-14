@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { Fuel, CheckCircle2 } from 'lucide-react';
-import { authAPI } from '../services/api';
+import { authAPI, branchAPI } from '../services/api';
 import Input from '../components/UI/Input';
 import Select from '../components/UI/Select';
 import PhoneInput from '../components/UI/PhoneInput';
@@ -14,7 +14,6 @@ import Toast from '../components/UI/Toast';
 import { useLanguage } from '../context/LanguageContext';
 import { buildRegisterSchema } from '../validation/authSchemas';
 import { regions } from '../regions';
-import { BRANCHES } from '../config/branches';
 
 /**
  * Registration no longer creates an active account — it submits a
@@ -26,7 +25,20 @@ import { BRANCHES } from '../config/branches';
 const Register = () => {
   const [toast, setToast] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [branches, setBranches] = useState([]);
   const { t } = useLanguage();
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await branchAPI.getPublic();
+        setBranches(response.data);
+      } catch {
+        // Non-fatal — the Select just shows no options; the field's own
+        // validation will still stop submission until one is chosen.
+      }
+    })();
+  }, []);
 
   const registerSchema = useMemo(() => buildRegisterSchema(t), [t]);
 
@@ -45,7 +57,7 @@ const Register = () => {
       last_name: '',
       region: '',
       district: '',
-      branch_code: '',
+      branch_id: '',
       phone: '',
       username: '',
       password: '',
@@ -71,8 +83,11 @@ const Register = () => {
     [t, selectedRegion]
   );
   const branchOptions = useMemo(
-    () => [{ value: '', label: t('selectPlaceholder') }, ...BRANCHES],
-    [t]
+    () => [
+      { value: '', label: t('selectPlaceholder') },
+      ...branches.map((b) => ({ value: b.id, label: `${b.name} (${b.code})` })),
+    ],
+    [t, branches]
   );
 
   const onSubmit = async (data) => {
@@ -180,14 +195,14 @@ const Register = () => {
             </div>
 
             <Controller
-              name="branch_code"
+              name="branch_id"
               control={control}
               render={({ field }) => (
                 <Select
                   label={t('branchCode')}
                   required
                   options={branchOptions}
-                  error={errors.branch_code?.message}
+                  error={errors.branch_id?.message}
                   {...field}
                 />
               )}

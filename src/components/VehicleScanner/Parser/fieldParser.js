@@ -1,9 +1,8 @@
 import { FIELD_KEYWORDS, FIELD_ANCHORS, FIELD_FALLBACKS } from './keywords';
 import { findBestKeywordLine, extractValueAfterLabel } from './fuzzyMatch';
 import { combineConfidence, makeField } from '../Confidence/confidence';
-import { cleanWhitespace, normalizeBrandName } from '../Normalizers/textNormalize';
-import { fixNumericConfusions, fixVinConfusions } from '../Normalizers/charConfusion';
-import { isValidVin, isValidPlate, isValidYear, isPlausibleName, formatPlate } from '../Validators/validators';
+import { fixVinConfusions } from '../Normalizers/charConfusion';
+import { isValidVin } from '../Validators/validators';
 
 /** Tries the numbered-field regex anchor against each OCR'd line. */
 function tryAnchor(field, lines) {
@@ -68,83 +67,13 @@ function finalizeVin(field) {
   return { ...field, value: fixed, valid, confidence: valid ? field.confidence : Math.min(field.confidence, 40) };
 }
 
-function finalizePlate(field) {
-  if (!field.value) return field;
-  const compact = field.value.toUpperCase().replace(/\s+/g, '');
-  const valid = isValidPlate(compact);
-  return { ...field, value: valid ? formatPlate(compact) : field.value, valid, confidence: valid ? field.confidence : Math.min(field.confidence, 40) };
-}
-
-function finalizeYear(field) {
-  if (!field.value) return field;
-  const fixed = fixNumericConfusions(field.value).replace(/\D/g, '');
-  const valid = isValidYear(fixed);
-  return { ...field, value: fixed, valid, confidence: valid ? field.confidence : Math.min(field.confidence, 40) };
-}
-
-function finalizeOwner(field) {
-  if (!field.value) return field;
-  const cleaned = cleanWhitespace(field.value);
-  const valid = isPlausibleName(cleaned);
-  return { ...field, value: cleaned, valid, confidence: valid ? field.confidence : Math.min(field.confidence, 40) };
-}
-
-function finalizeBrandModel(field) {
-  if (!field.value) return field;
-  const { value, matched } = normalizeBrandName(field.value);
-  return { ...field, value, valid: true, confidence: matched ? field.confidence : Math.min(field.confidence, 55) };
-}
-
-function finalizeEnginePower(field) {
-  if (!field.value) return field;
-  const fixed = fixNumericConfusions(field.value).replace(/\D/g, '');
-  const valid = fixed.length > 0 && Number(fixed) > 0 && Number(fixed) < 2000;
-  return { ...field, value: fixed, valid, confidence: valid ? field.confidence : Math.min(field.confidence, 40) };
-}
-
-const FINALIZERS = {
-  vin: finalizeVin,
-  plate: finalizePlate,
-  year: finalizeYear,
-  owner: finalizeOwner,
-  brandModel: finalizeBrandModel,
-  enginePower: finalizeEnginePower,
-};
-
 /**
- * Parses the front side (plate, brand/model, owner) from dual-pass OCR data.
- * Returns `{ fields, formValues }` — `formValues` is a flat plain object
- * matching the warranty form's field names, kept for backward compatibility
- * with `onComplete`.
+ * The scanner's one job: extract the VIN (field 11 on the registration
+ * certificate) from dual-pass OCR data. Returns `{ fields: { vehicle_vin } }`
+ * — no other fields are read or returned anymore (see the VehicleScanner
+ * redesign: manual entry for everything else, this scans VIN only).
  */
-export function parseFrontSide(dualPassData) {
-  const plate = FINALIZERS.plate(extractField('plate', dualPassData));
-  const brandModel = FINALIZERS.brandModel(extractField('brandModel', dualPassData));
-  const owner = FINALIZERS.owner(extractField('owner', dualPassData));
-
-  const brandWord = brandModel.value.split(/[\s/]+/)[0] || '';
-
-  return {
-    fields: {
-      vehicle_plate_number: plate,
-      vehicle_brand: { ...brandModel, value: brandWord },
-      vehicle_model: brandModel,
-      owner_full_name: owner,
-    },
-  };
-}
-
-/** Parses the back side (year, VIN, engine power). */
-export function parseBackSide(dualPassData) {
-  const year = FINALIZERS.year(extractField('year', dualPassData));
-  const vin = FINALIZERS.vin(extractField('vin', dualPassData));
-  const enginePower = FINALIZERS.enginePower(extractField('enginePower', dualPassData));
-
-  return {
-    fields: {
-      vehicle_production_year: year,
-      vehicle_vin: vin,
-      vehicle_engine_power: enginePower,
-    },
-  };
+export function parseVin(dualPassData) {
+  const vin = finalizeVin(extractField('vin', dualPassData));
+  return { fields: { vehicle_vin: vin } };
 }

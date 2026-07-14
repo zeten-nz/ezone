@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import Button from '../components/UI/Button';
 import Toast from '../components/UI/Toast';
 import WarrantyFormFields, {
-  EMPTY_WARRANTY_FORM,
+  createEmptyWarrantyForm,
   validateWarrantyForm,
 } from '../components/WarrantyFormFields';
 
@@ -18,14 +18,14 @@ const EmployeeWarrantyFormModern = () => {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [formData, setFormData] = useState({ ...EMPTY_WARRANTY_FORM });
+  // Lazy initializer — createEmptyWarrantyForm() mints a fresh
+  // submission_uuid (EasyGas's idempotency key for this warranty), so it
+  // must only run once per form instance, not on every re-render.
+  const [formData, setFormData] = useState(() => createEmptyWarrantyForm());
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      if (name === 'region') return { ...prev, [name]: value, city: '', district: '' };
-      return { ...prev, [name]: value };
-    });
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
@@ -44,7 +44,7 @@ const EmployeeWarrantyFormModern = () => {
       setToast({ type: 'success', message: t('formSubmitted') });
       setSubmitted(true);
       setTimeout(() => {
-        setFormData({ ...EMPTY_WARRANTY_FORM });
+        setFormData(createEmptyWarrantyForm());
         setSubmitted(false);
       }, 2000);
     } catch {
@@ -96,6 +96,7 @@ const EmployeeWarrantyFormModern = () => {
           <WarrantyFormFields
             formData={formData}
             onChange={handleInputChange}
+            onEquipmentChange={(equipment) => setFormData((prev) => ({ ...prev, equipment }))}
             errors={errors}
             scannerOpen={scannerOpen}
             setScannerOpen={setScannerOpen}
@@ -103,7 +104,7 @@ const EmployeeWarrantyFormModern = () => {
           />
 
           <div className="flex gap-3 justify-end">
-            <Button variant="secondary" type="reset" onClick={() => setFormData({ ...EMPTY_WARRANTY_FORM })}>
+            <Button variant="secondary" type="reset" onClick={() => setFormData(createEmptyWarrantyForm())}>
               {t('clear')}
             </Button>
             <Button type="submit" loading={loading}>

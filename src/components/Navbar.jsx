@@ -58,7 +58,7 @@ const Navbar = () => {
             profileLabel={t('myAccount')}
             logoutLabel={t('logout')}
             roleLabel={user?.role === 'ADMIN' ? t('admin') : t('employee')}
-            onLogout={logout}
+            onLogout={() => logout()}
           />
         </div>
       </div>

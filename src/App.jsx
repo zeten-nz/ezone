@@ -38,6 +38,9 @@ const AdminDashboardModern          = lazy(() => import('./pages/AdminDashboardM
 const AdminUsersModern              = lazy(() => import('./pages/AdminUsersModern'));
 const AdminWarrantyFormsModern      = lazy(() => import('./pages/AdminWarrantyFormsModern'));
 const AdminRegistrationRequestsModern = lazy(() => import('./pages/AdminRegistrationRequestsModern'));
+const AdminBranchesModern           = lazy(() => import('./pages/AdminBranchesModern'));
+const AdminProductsModern           = lazy(() => import('./pages/AdminProductsModern'));
+const AdminReportsModern            = lazy(() => import('./pages/AdminReportsModern'));
 
 // ── Page loading fallback ─────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -153,6 +156,30 @@ function App() {
                       element={
                         <ErrorBoundary name="RegistrationRequestsBoundary" inline>
                           <AdminRegistrationRequestsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/branches"
+                      element={
+                        <ErrorBoundary name="BranchesBoundary" inline>
+                          <AdminBranchesModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/products"
+                      element={
+                        <ErrorBoundary name="ProductsBoundary" inline>
+                          <AdminProductsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/reports"
+                      element={
+                        <ErrorBoundary name="ReportsBoundary" inline>
+                          <AdminReportsModern />
                         </ErrorBoundary>
                       }
                     />
