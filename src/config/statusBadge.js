@@ -17,4 +17,22 @@ export const STATUS_BADGE = {
   SYNC_SYNCING: { variant: 'warning', labelKey: 'syncStatusSyncing' },
   SYNC_SYNCED:  { variant: 'success', labelKey: 'syncStatusSynced' },
   SYNC_FAILED:  { variant: 'danger',  labelKey: 'syncStatusFailed' },
+  // Physical inventory item status (inventory_items.status) — own label
+  // keys. IN_STOCK's labelKey text was relabeled "Available" in Phase 4
+  // (the ENUM value/all SQL/JS comparisons stay 'IN_STOCK' — display-only
+  // change, see the Phase 4 plan's Critical Review #2).
+  IN_STOCK:  { variant: 'success', labelKey: 'inventoryStatusInStock' },
+  RESERVED:  { variant: 'warning', labelKey: 'inventoryStatusReserved' },
+  INSTALLED: { variant: 'neutral', labelKey: 'inventoryStatusInstalled' },
+  RETURNED:  { variant: 'warning', labelKey: 'inventoryStatusReturned' },
+  DAMAGED:   { variant: 'danger',  labelKey: 'inventoryStatusDamaged' },
+  LOST:      { variant: 'danger',  labelKey: 'inventoryStatusLost' },
+  MERGED:    { variant: 'neutral', labelKey: 'inventoryStatusMerged' },
+  // Point ledger transaction type (point_transactions.transaction_type) —
+  // own label keys.
+  WARRANTY_AWARD:     { variant: 'success', labelKey: 'pointsTypeWarrantyAward' },
+  WARRANTY_REVERSAL:  { variant: 'neutral', labelKey: 'pointsTypeWarrantyReversal' },
+  MANUAL_ADJUSTMENT:  { variant: 'warning', labelKey: 'pointsTypeManualAdjustment' },
+  MANUAL_BONUS:       { variant: 'success', labelKey: 'pointsTypeManualBonus' },
+  MANUAL_PENALTY:     { variant: 'danger',  labelKey: 'pointsTypeManualPenalty' },
 };

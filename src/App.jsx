@@ -40,7 +40,15 @@ const AdminWarrantyFormsModern      = lazy(() => import('./pages/AdminWarrantyFo
 const AdminRegistrationRequestsModern = lazy(() => import('./pages/AdminRegistrationRequestsModern'));
 const AdminBranchesModern           = lazy(() => import('./pages/AdminBranchesModern'));
 const AdminProductsModern           = lazy(() => import('./pages/AdminProductsModern'));
+const AdminInventoryModern          = lazy(() => import('./pages/AdminInventoryModern'));
 const AdminReportsModern            = lazy(() => import('./pages/AdminReportsModern'));
+const AdminPointsConfigModern       = lazy(() => import('./pages/AdminPointsConfigModern'));
+const AdminInstallerPointsModern    = lazy(() => import('./pages/AdminInstallerPointsModern'));
+const MyPointsModern                = lazy(() => import('./pages/MyPointsModern'));
+const AdminInstallerStatisticsModern = lazy(() => import('./pages/AdminInstallerStatisticsModern'));
+const AdminProductStatisticsModern  = lazy(() => import('./pages/AdminProductStatisticsModern'));
+const AdminWarehouseStatisticsModern = lazy(() => import('./pages/AdminWarehouseStatisticsModern'));
+const MyStatisticsModern            = lazy(() => import('./pages/MyStatisticsModern'));
 
 // ── Page loading fallback ─────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -115,6 +123,22 @@ function App() {
                         </ErrorBoundary>
                       }
                     />
+                    <Route
+                      path="/my-points"
+                      element={
+                        <ErrorBoundary name="MyPointsBoundary" inline>
+                          <MyPointsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/my-statistics"
+                      element={
+                        <ErrorBoundary name="MyStatisticsBoundary" inline>
+                          <MyStatisticsModern />
+                        </ErrorBoundary>
+                      }
+                    />
                   </Route>
 
                   {/* Admin routes */}
@@ -176,10 +200,58 @@ function App() {
                       }
                     />
                     <Route
+                      path="/inventory"
+                      element={
+                        <ErrorBoundary name="InventoryBoundary" inline>
+                          <AdminInventoryModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
                       path="/reports"
                       element={
                         <ErrorBoundary name="ReportsBoundary" inline>
                           <AdminReportsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/points-config"
+                      element={
+                        <ErrorBoundary name="PointsConfigBoundary" inline>
+                          <AdminPointsConfigModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/installer-points"
+                      element={
+                        <ErrorBoundary name="InstallerPointsBoundary" inline>
+                          <AdminInstallerPointsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/installer-statistics"
+                      element={
+                        <ErrorBoundary name="InstallerStatisticsBoundary" inline>
+                          <AdminInstallerStatisticsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/product-statistics"
+                      element={
+                        <ErrorBoundary name="ProductStatisticsBoundary" inline>
+                          <AdminProductStatisticsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/warehouse-statistics"
+                      element={
+                        <ErrorBoundary name="WarehouseStatisticsBoundary" inline>
+                          <AdminWarehouseStatisticsModern />
                         </ErrorBoundary>
                       }
                     />

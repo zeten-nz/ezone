@@ -33,3 +33,16 @@ export const buildExportFilename = (prefix, days) => {
   const range = days === 'all' ? 'all' : `last${days}days`;
   return `${prefix}_${date}_${range}.xlsx`;
 };
+
+/**
+ * Builds a plain dated CSV filename (Phase 4's streamed exports) — no day-
+ * range suffix, since those exports aren't period-scoped like the Excel
+ * ones above.
+ *
+ * @param {string} prefix - e.g. 'inventory'
+ * @returns {string} e.g. 'inventory_2024-01-15.csv'
+ */
+export const buildCsvFilename = (prefix) => {
+  const date = new Date().toISOString().split('T')[0];
+  return `${prefix}_${date}.csv`;
+};

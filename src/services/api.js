@@ -21,6 +21,9 @@ import { branchesService }             from './branches.service';
 import { productsService }             from './products.service';
 import { reportsService }              from './reports.service';
 import { carsService }                 from './cars.service';
+import { inventoryService }            from './inventory.service';
+import { pointsService }               from './points.service';
+import { exportCsvService }            from './exportCsv.service';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
@@ -48,7 +51,7 @@ export const userAPI = {
 export const warrantyAPI = {
   createForm:    (data)                     => warrantyService.create(data),
   updateForm:    (formId, data)             => warrantyService.update(formId, data),
-  getAllForms:   (page, limit, search)       => warrantyService.getAll(page, limit, search),
+  getAllForms:   (page, limit, search, employeeId) => warrantyService.getAll(page, limit, search, employeeId),
   getMyForms:   (page, limit, search)       => warrantyService.getMyForms(page, limit, search),
   getFormDetail: (formId)                   => warrantyService.getById(formId),
   deleteForm:    (formId)                   => warrantyService.delete(formId),
@@ -105,11 +108,54 @@ export const reportsAPI = {
   getMonthlyActivity:   (year, employeeId)  => reportsService.getMonthlyActivity(year, employeeId),
   getProductsInstalled: (category)          => reportsService.getProductsInstalled(category),
   getBranchRanking:     (period)            => reportsService.getBranchRanking(period),
+  getDashboardTotals:         ()                    => reportsService.getDashboardTotals(),
+  getPointsLeaderboard:       (period, limit)       => reportsService.getPointsLeaderboard(period, limit),
+  getTopWarehouses:           ()                    => reportsService.getTopWarehouses(),
+  getRecentImports:           (limit)               => reportsService.getRecentImports(limit),
+  getRecentWarrantyActivity:  (limit)               => reportsService.getRecentWarrantyActivity(limit),
+  getRecentInventoryActivity: (limit)               => reportsService.getRecentInventoryActivity(limit),
+  getInstallerStatistics:     (installerId)         => reportsService.getInstallerStatistics(installerId),
+  getMyStatistics:            ()                    => reportsService.getMyStatistics(),
+  getProductStatistics:       (productId)           => reportsService.getProductStatistics(productId),
+  getWarehouseStatistics:     (branchId)             => reportsService.getWarehouseStatistics(branchId),
 };
 
 // ── Vehicle catalog (any authenticated role) ─────────────────────────────────
 export const carAPI = {
   search: (query) => carsService.search(query),
+};
+
+// ── Inventory (admin) ─────────────────────────────────────────────────────
+export const inventoryAPI = {
+  getAll:              (page, limit, filters)                    => inventoryService.getAll(page, limit, filters),
+  importCsv:           (productId, file, branchId)                => inventoryService.importCsv(productId, file, branchId),
+  getImportBatches:    (page, limit)                             => inventoryService.getImportBatches(page, limit),
+  getImportBatchDetail: (batchId)                                => inventoryService.getImportBatchDetail(batchId),
+  validateBarcode:      (barcode, productId, equipmentType)      => inventoryService.validateBarcode(barcode, productId, equipmentType),
+  changeStatus:         (itemId, fromStatus, toStatus, reason)   => inventoryService.changeStatus(itemId, fromStatus, toStatus, reason),
+  transferBranch:       (itemId, branchId, reason)                => inventoryService.transferBranch(itemId, branchId, reason),
+  correctBarcode:       (itemId, newBarcode, reason)              => inventoryService.correctBarcode(itemId, newBarcode, reason),
+  mergeDuplicate:       (itemId, canonicalItemId, reason)         => inventoryService.mergeDuplicate(itemId, canonicalItemId, reason),
+};
+
+// ── Installer points ──────────────────────────────────────────────────────
+export const pointsAPI = {
+  getMine:            (page, limit)                     => pointsService.getMine(page, limit),
+  getForInstaller:     (installerId, page, limit)        => pointsService.getForInstaller(installerId, page, limit),
+  getProductConfigs:   (page, limit, search)             => pointsService.getProductConfigs(page, limit, search),
+  setProductConfig:    (productId, points)               => pointsService.setProductConfig(productId, points),
+  createAdjustment:    (installerId, points, type, reason) => pointsService.createAdjustment(installerId, points, type, reason),
+};
+
+// ── CSV export (Phase 4 — streamed, distinct from exportAPI's XLSX) ─────────
+export const exportCsvAPI = {
+  inventory:            () => exportCsvService.inventory(),
+  warranty:              (employeeId) => exportCsvService.warranty(employeeId),
+  points:                () => exportCsvService.points(),
+  reports:                () => exportCsvService.reports(),
+  installerStatistics:    () => exportCsvService.installerStatistics(),
+  productStatistics:      () => exportCsvService.productStatistics(),
+  warehouseStatistics:    () => exportCsvService.warehouseStatistics(),
 };
 
 // Re-export the raw client for edge cases (not for general component use)

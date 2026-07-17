@@ -30,12 +30,13 @@ export const warrantyService = {
   update: (formId, data) =>
     client.put(`/warranty/${formId}`, toWirePayload(data)),
 
-  getAll: (page = 1, limit = 20, search = '') =>
+  getAll: (page = 1, limit = 20, search = '', employeeId) =>
     client.get('/warranty', {
       params: {
         page,
         limit,
         ...(search ? { search } : {}),
+        ...(employeeId ? { employeeId } : {}),
       },
     }),
 

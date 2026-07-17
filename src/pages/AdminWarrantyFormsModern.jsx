@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, Car, FileSearch, RefreshCw } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, Car, FileSearch, RefreshCw, Download, X } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
-import { warrantyAPI } from '../services/api';
+import { warrantyAPI, exportCsvAPI } from '../services/api';
+import { downloadBlob, buildCsvFilename } from '../utils/download';
 import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
 import Button from '../components/UI/Button';
@@ -30,6 +32,14 @@ const toInputDate = (val) => {
 
 const AdminWarrantyFormsModern = () => {
   const { t, language } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Optional installer drill-down via ?employeeId=… (e.g. the "View
+  // warranties" link from Installer Statistics) — reuses this same admin
+  // list/search/pagination/export UI scoped to one installer, rather than a
+  // separate page or table.
+  const employeeIdParam = searchParams.get('employeeId');
+  const employeeId = employeeIdParam ? parseInt(employeeIdParam, 10) : undefined;
 
   // ── List state ──────────────────────────────────────────────────────────────
   const [forms, setForms] = useState([]);
@@ -47,6 +57,19 @@ const AdminWarrantyFormsModern = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [retrySyncConfirm, setRetrySyncConfirm] = useState(null);
   const [toast, setToast] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const response = await exportCsvAPI.warranty(employeeId);
+      downloadBlob(response.data, buildCsvFilename('warranty'));
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // ── Edit modal state ─────────────────────────────────────────────────────────
   const [editFormData, setEditFormData] = useState(null);
@@ -61,7 +84,7 @@ const AdminWarrantyFormsModern = () => {
     setError(null);
     void (async () => {
       try {
-        const response = await warrantyAPI.getAllForms(currentPage, pageSize, search);
+        const response = await warrantyAPI.getAllForms(currentPage, pageSize, search, employeeId);
         setForms(response.data.data);
         setPagination(response.data.pagination);
       } catch (err) {
@@ -70,7 +93,21 @@ const AdminWarrantyFormsModern = () => {
         setLoading(false);
       }
     })();
-  }, [currentPage, pageSize, search, refreshKey]);
+  }, [currentPage, pageSize, search, employeeId, refreshKey]);
+
+  const handleClearInstallerFilter = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('employeeId');
+      return next;
+    });
+    setCurrentPage(1);
+  };
+
+  // employee_name comes back on every row already (no extra request needed)
+  // — falls back to the raw id only for the brief window before the first
+  // response lands, or if the installer has zero warranties to read a name from.
+  const filteredInstallerName = employeeId ? forms.find((f) => f.installer?.id === employeeId)?.employee_name : null;
 
   const handleRetry = () => {
     setLoading(true);
@@ -283,10 +320,27 @@ const AdminWarrantyFormsModern = () => {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('warrantyForms')}</h1>
-          <p className="text-neutral-500 mt-1.5">{t('adminWarrantySubtitle')}</p>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('warrantyForms')}</h1>
+            <p className="text-neutral-500 mt-1.5">{t('adminWarrantySubtitle')}</p>
+          </div>
+          <Button variant="outline" icon={Download} loading={exporting} onClick={handleExport}>
+            {exporting ? t('exportingCsv') : t('exportCsvAction')}
+          </Button>
         </div>
+
+        {employeeId && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+            <p className="text-sm text-blue-900">
+              <span className="font-medium">{t('filteredByInstallerLabel')}:</span>{' '}
+              {filteredInstallerName || `#${employeeId}`}
+            </p>
+            <Button size="sm" variant="outline" icon={X} onClick={handleClearInstallerFilter}>
+              {t('clearInstallerFilter')}
+            </Button>
+          </div>
+        )}
 
         <Card>
           <CardContent className="p-4">

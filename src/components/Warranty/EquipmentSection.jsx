@@ -1,8 +1,10 @@
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import Select from '../UI/Select';
 import Autocomplete from '../UI/Autocomplete';
 import Input from '../UI/Input';
 import useProductSearch from '../../hooks/useProductSearch';
 import useBrandOptions from '../../hooks/useBrandOptions';
+import useBarcodeValidation from '../../hooks/useBarcodeValidation';
 import { useLanguage } from '../../context/LanguageContext';
 import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
 
@@ -21,6 +23,10 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
   const { t } = useLanguage();
   const { brands, loading: brandsLoading } = useBrandOptions(row.equipment_type);
   const { query, setQuery, results, loading } = useProductSearch(row.equipment_type, row.brand, fuelType);
+  // Instant, read-only feedback only — the atomic claim that actually
+  // enforces this happens server-side at submission time (see
+  // ezone-server/services/warrantyService.js). Nothing here blocks typing.
+  const barcodeCheck = useBarcodeValidation(row.serial_number, row.product?.id, row.equipment_type);
 
   const brandOptions = [
     { value: '', label: brandsLoading ? t('loadingResults') : t('selectOption') },
@@ -66,11 +72,30 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
           error={error}
           disabled={!row.brand}
         />
-        <Input
-          label={t('serialVinNumber')}
-          value={row.serial_number}
-          onChange={(e) => onChange({ ...row, serial_number: e.target.value })}
-        />
+        <div>
+          <Input
+            label={t('serialVinNumber')}
+            placeholder={row.product ? t('barcodeScanOrType') : t('selectProductFirst')}
+            value={row.serial_number}
+            onChange={(e) => onChange({ ...row, serial_number: e.target.value })}
+            disabled={!row.product}
+          />
+          {barcodeCheck.status === 'checking' && (
+            <p className="flex items-center gap-1 text-xs text-neutral-500 mt-1.5">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('barcodeChecking')}
+            </p>
+          )}
+          {barcodeCheck.status === 'valid' && barcodeCheck.product && (
+            <p className="flex items-center gap-1 text-xs text-green-600 mt-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" /> {barcodeCheck.product.brand} {barcodeCheck.product.model || ''}
+            </p>
+          )}
+          {barcodeCheck.status === 'invalid' && (
+            <p className="flex items-center gap-1 text-xs text-red-600 mt-1.5">
+              <XCircle className="w-3.5 h-3.5" /> {barcodeCheck.error}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

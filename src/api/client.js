@@ -72,6 +72,11 @@ client.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Lets the backend localize response content that can't be translated
+    // client-side after the fact — currently only CSV exports (see
+    // ezone-server/config/csvLabels.js), generated server-side as a byte
+    // stream, not JSON the frontend could run through LanguageContext's t().
+    config.headers['X-Language'] = getLanguage();
     return config;
   },
   () => Promise.reject(new AppError(getErrorMessage('UNKNOWN_ERROR', 0, getLanguage())))

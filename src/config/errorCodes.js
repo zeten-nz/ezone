@@ -47,6 +47,26 @@ const ERROR_CODE_MESSAGES = {
   INVALID_DATE: { uz: "Sana noto'g'ri yoki qabul qilinishi mumkin emas.", ru: 'Дата некорректна или не может быть принята.' },
   WARRANTY_LOCKED: { uz: "Bu kafolat EasyGas tomonidan qulflangan (odatda 24 soatdan keyin) — endi sinxronlanmaydi.", ru: 'Эта гарантия заблокирована в EasyGas (обычно через 24 часа) — синхронизация больше невозможна.' },
   PRODUCT_NOT_MAPPED: { uz: "Ushbu jihoz uchun mahsulot hali EasyGas katalogiga bog'lanmagan.", ru: 'Продукт для этого оборудования ещё не сопоставлен с каталогом EasyGas.' },
+
+  // Inventory barcode validation (Phase 2 — see ezone-server/services/inventoryService.js's
+  // validateBarcode) — returned both by the instant-feedback
+  // GET /api/inventory/validate/:barcode endpoint and by warranty create/update.
+  BARCODE_NOT_FOUND: { uz: "Bu shtrix-kod ombor tizimida topilmadi.", ru: 'Этот штрих-код не найден в системе склада.' },
+  BARCODE_WRONG_PRODUCT: { uz: "Bu shtrix-kod boshqa mahsulotga tegishli.", ru: 'Этот штрих-код принадлежит другому продукту.' },
+  BARCODE_WRONG_CATEGORY: { uz: "Bu shtrix-kod ushbu jihoz turi uchun mos emas.", ru: 'Этот штрих-код не подходит для данного типа оборудования.' },
+  BARCODE_PRODUCT_INACTIVE: { uz: "Bu shtrix-kodga tegishli mahsulot endi faol emas.", ru: 'Продукт этого штрих-кода больше не активен.' },
+  BARCODE_NOT_AVAILABLE: { uz: "Bu shtrix-kod hozir mavjud emas (allaqachon o'rnatilgan yoki boshqa holatda).", ru: 'Этот штрих-код сейчас недоступен (уже установлен или в другом статусе).' },
+  BARCODE_CLAIM_FAILED: { uz: "Bu shtrix-kod hozirgina band qilindi — boshqa birini tanlang.", ru: 'Этот штрих-код только что был занят — выберите другой.' },
+  BARCODE_REQUIRED: { uz: "Har bir jihoz uchun shtrix-kod kiritilishi shart.", ru: 'Для каждого оборудования необходимо указать штрих-код.' },
+
+  // Installer points (Phase 3 — see ezone-server/services/pointsService.js)
+  REASON_REQUIRED: { uz: "Qo'lda ball tuzatishi uchun sabab kiritilishi shart.", ru: 'Для ручной корректировки баллов необходимо указать причину.' },
+
+  // Manual inventory operations (Phase 4 — see ezone-server/services/inventoryService.js)
+  ITEM_STATE_CHANGED: { uz: "Ushbu element holati o'zgardi — sahifani yangilab, qayta urinib ko'ring.", ru: 'Состояние этого товара изменилось — обновите страницу и попробуйте снова.' },
+  ITEM_INSTALLED: { uz: "O'rnatilgan elementning shtrix-kodini tuzatib bo'lmaydi — avval uni bo'shating.", ru: 'Нельзя исправить штрих-код установленного товара — сначала освободите его.' },
+  BARCODE_ALREADY_EXISTS: { uz: 'Bu shtrix-kod boshqa elementda allaqachon ishlatilmoqda.', ru: 'Этот штрих-код уже используется другим товаром.' },
+  MERGE_PRODUCT_MISMATCH: { uz: "Turli mahsulotlarga tegishli elementlarni birlashtirib bo'lmaydi.", ru: 'Нельзя объединить товары, относящиеся к разным продуктам.' },
 };
 
 // Fallback when the backend responds without an errorCode at all (e.g. a
