@@ -59,6 +59,13 @@ const ERROR_CODE_MESSAGES = {
   BARCODE_CLAIM_FAILED: { uz: "Bu shtrix-kod hozirgina band qilindi — boshqa birini tanlang.", ru: 'Этот штрих-код только что был занят — выберите другой.' },
   BARCODE_REQUIRED: { uz: "Har bir jihoz uchun shtrix-kod kiritilishi shart.", ru: 'Для каждого оборудования необходимо указать штрих-код.' },
 
+  // Manual Verification workflow (see ezone-server/services/inventoryService.js's
+  // validateBarcodeOrAcceptManual) — only reachable when the barcode
+  // genuinely resolves to BARCODE_NOT_FOUND and the installer opts in; every
+  // other barcode failure above continues to block submission unchanged.
+  SELLER_INFO_REQUIRED: { uz: "Qo'lda tekshirish uchun sotuvchi ismi, telefon raqami va izoh kiritilishi shart.", ru: 'Для ручной проверки необходимо указать имя продавца, номер телефона и комментарий.' },
+  MANUAL_VERIFICATION_UNRESOLVED: { uz: "Ushbu kafolatda qo'lda tekshirish kutilayotgan yoki rad etilgan jihoz bor — sinxronlashdan oldin uni hal qiling.", ru: 'В этой гарантии есть оборудование, ожидающее или отклонённое ручной проверкой — сначала разрешите это, прежде чем повторять синхронизацию.' },
+
   // Installer points (Phase 3 — see ezone-server/services/pointsService.js)
   REASON_REQUIRED: { uz: "Qo'lda ball tuzatishi uchun sabab kiritilishi shart.", ru: 'Для ручной корректировки баллов необходимо указать причину.' },
 

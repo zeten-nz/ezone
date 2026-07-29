@@ -1,8 +1,12 @@
+import { Check, X } from 'lucide-react';
 import { Modal } from '../UI/Modal';
 import StatusBadge from '../UI/StatusBadge';
+import Button from '../UI/Button';
+import AuthenticatedPhoto from '../UI/AuthenticatedPhoto';
 import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
 import { getErrorMessage } from '../../config/errorCodes';
 import { extractSyncErrorCode } from '../../utils/syncErrorCode';
+import { warrantyAPI } from '../../services/api';
 
 const FUEL_DOT = { LPG: 'bg-blue-600', CNG: 'bg-emerald-500' };
 
@@ -43,14 +47,77 @@ const EquipmentRow = ({ label, fuelType, productName, serial }) => (
 );
 
 /**
+ * Manual Verification workflow — replaces the plain EquipmentRow above for
+ * any row whose verification_status isn't the ordinary AUTO default. Shows
+ * exactly what the spec asks the admin to see (seller name/phone, comment,
+ * photo, who reviewed it and when) plus, for a still-PENDING row, Approve/
+ * Reject actions. The actual confirmation UI and API calls are owned by the
+ * parent page (onApprove/onReject callbacks) — same separation
+ * AdminWarrantyFormsModern already uses for delete/retry-sync, so this stays
+ * a presentational component like the rest of this file.
+ */
+const ManualVerificationRow = ({ item, t, language, onApprove, onReject, canReview }) => (
+  <div className="py-3 space-y-3">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-xs text-neutral-500">{getEquipmentTypeLabel(t, item.equipment_type)}</p>
+        <p className="text-sm font-medium text-neutral-900 truncate">{item.product_name || '—'}</p>
+      </div>
+      <StatusBadge status={`VERIFICATION_${item.verification_status}`} />
+    </div>
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pl-0">
+      <Field label={t('sellerName')} value={item.seller_name} />
+      <Field label={t('sellerPhone')} value={item.seller_phone} />
+      <div className="col-span-2 sm:col-span-1">
+        <p className="text-xs text-neutral-500">{t('verificationComment')}</p>
+        <p className="text-sm font-medium text-neutral-900 mt-0.5">{item.verification_comment || '—'}</p>
+      </div>
+    </div>
+    {item.manual_verification_photo_filename && (
+      <div>
+        <p className="text-xs text-neutral-500 mb-1">{t('verificationPhotoOptional')}</p>
+        <AuthenticatedPhoto
+          fetcher={() => warrantyAPI.getEquipmentPhotoBlob(item.id)}
+          cacheKey={item.id}
+          className="w-24 h-24 rounded-lg border border-neutral-200"
+        />
+      </div>
+    )}
+    {item.verification_status !== 'PENDING' && item.reviewed_at && (
+      <p className="text-xs text-neutral-500">
+        {t('reviewedBy')}: {item.reviewed_by_name || '—'} · {new Date(item.reviewed_at).toLocaleString(language === 'ru' ? 'ru-RU' : 'uz-UZ')}
+        {item.review_notes && <> · “{item.review_notes}”</>}
+      </p>
+    )}
+    {item.verification_status === 'PENDING' && canReview && (
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" variant="success" icon={Check} onClick={() => onApprove(item.id)}>
+          {t('approve')}
+        </Button>
+        <Button size="sm" variant="danger" icon={X} onClick={() => onReject(item.id)}>
+          {t('reject')}
+        </Button>
+      </div>
+    )}
+  </div>
+);
+
+/**
  * Comprehensive read-only detail view, shared by the admin and employee
  * warranty lists. Reads the new warrantyDTO shape — `installer` (nested
  * snapshot: full_name/phone/region/district/branch/branch_code),
  * `vehicle_name` (single field, server-resolved fallback for old rows),
  * `equipment` (the 4 fixed rows) with a `legacy_equipment` fallback for
  * historical rows recorded before either equipment redesign existed.
+ *
+ * Manual Verification workflow: onApproveVerification/onRejectVerification
+ * are optional — only the admin warranty page passes them (with
+ * canReview), so an installer viewing their own warranty here still sees
+ * seller info/photo/status on a row awaiting review, just never the
+ * Approve/Reject buttons. The parent owns the actual confirm/reject-reason
+ * UI and API calls, same as it already does for delete/retry-sync.
  */
-const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz' }) => (
+const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz', onApproveVerification, onRejectVerification, canReview = false }) => (
   <Modal isOpen={isOpen && !!form} onClose={onClose} title={t('warrantyDetailsTitle')} size="2xl">
     {form && (
       <div className="space-y-5">
@@ -93,12 +160,24 @@ const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz' }) => (
           {form.equipment?.length > 0 ? (
             <div className="divide-y divide-neutral-100">
               {form.equipment.map((item) => (
-                <EquipmentRow
-                  key={item.equipment_type}
-                  label={getEquipmentTypeLabel(t, item.equipment_type)}
-                  productName={item.product_name}
-                  serial={item.serial_number}
-                />
+                item.verification_status && item.verification_status !== 'AUTO' ? (
+                  <ManualVerificationRow
+                    key={item.equipment_type}
+                    item={item}
+                    t={t}
+                    language={language}
+                    canReview={canReview}
+                    onApprove={onApproveVerification}
+                    onReject={onRejectVerification}
+                  />
+                ) : (
+                  <EquipmentRow
+                    key={item.equipment_type}
+                    label={getEquipmentTypeLabel(t, item.equipment_type)}
+                    productName={item.product_name}
+                    serial={item.serial_number}
+                  />
+                )
               ))}
             </div>
           ) : form.legacy_equipment ? (

@@ -18,6 +18,7 @@ import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
 import StatusBadge from '../components/UI/StatusBadge';
 import WarrantyDetailModal from '../components/Warranty/WarrantyDetailModal';
+import RejectReasonModal from '../components/RegistrationRequests/RejectReasonModal';
 import WarrantyFormFields, { validateWarrantyForm } from '../components/WarrantyFormFields';
 import { toEditableEquipment } from '../config/equipmentCategories';
 import { getErrorMessage } from '../config/errorCodes';
@@ -49,6 +50,8 @@ const AdminWarrantyFormsModern = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  // Manual Verification workflow admin filter — 'all' | 'PENDING' | 'APPROVED' | 'REJECTED'.
+  const [verificationFilter, setVerificationFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -56,6 +59,9 @@ const AdminWarrantyFormsModern = () => {
   const [showDetail, setShowDetail] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [retrySyncConfirm, setRetrySyncConfirm] = useState(null);
+  const [approveVerificationConfirm, setApproveVerificationConfirm] = useState(null);
+  const [rejectVerificationTarget, setRejectVerificationTarget] = useState(null);
+  const [verificationActionSubmitting, setVerificationActionSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
   const [exporting, setExporting] = useState(false);
 
@@ -84,7 +90,10 @@ const AdminWarrantyFormsModern = () => {
     setError(null);
     void (async () => {
       try {
-        const response = await warrantyAPI.getAllForms(currentPage, pageSize, search, employeeId);
+        const response = await warrantyAPI.getAllForms(
+          currentPage, pageSize, search, employeeId,
+          verificationFilter !== 'all' ? verificationFilter : undefined
+        );
         setForms(response.data.data);
         setPagination(response.data.pagination);
       } catch (err) {
@@ -93,7 +102,7 @@ const AdminWarrantyFormsModern = () => {
         setLoading(false);
       }
     })();
-  }, [currentPage, pageSize, search, employeeId, refreshKey]);
+  }, [currentPage, pageSize, search, employeeId, verificationFilter, refreshKey]);
 
   const handleClearInstallerFilter = () => {
     setSearchParams((prev) => {
@@ -117,6 +126,11 @@ const AdminWarrantyFormsModern = () => {
   // ── List handlers ────────────────────────────────────────────────────────────
   const handleSearch = (value) => {
     setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleVerificationFilterChange = (value) => {
+    setVerificationFilter(value);
     setCurrentPage(1);
   };
 
@@ -151,6 +165,42 @@ const AdminWarrantyFormsModern = () => {
       setShowDetail(true);
     } catch (err) {
       setToast({ type: 'error', message: err.message });
+    }
+  };
+
+  // ── Manual Verification workflow ─────────────────────────────────────────
+  const handleApproveVerification = async () => {
+    if (!approveVerificationConfirm) return;
+    setVerificationActionSubmitting(true);
+    try {
+      await warrantyAPI.approveVerification(approveVerificationConfirm);
+      setToast({ type: 'success', message: t('verificationApproved') });
+      setApproveVerificationConfirm(null);
+      setRefreshKey((k) => k + 1);
+      // The detail modal stays open on the same warranty — refresh it in
+      // place so the row's new status/reviewer info shows immediately,
+      // same as any other row on it that might still need review.
+      if (selectedForm) await handleViewDetail(selectedForm.id);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setVerificationActionSubmitting(false);
+    }
+  };
+
+  const handleRejectVerification = async (notes) => {
+    if (!rejectVerificationTarget) return;
+    setVerificationActionSubmitting(true);
+    try {
+      await warrantyAPI.rejectVerification(rejectVerificationTarget, notes);
+      setToast({ type: 'success', message: t('verificationRejected') });
+      setRejectVerificationTarget(null);
+      setRefreshKey((k) => k + 1);
+      if (selectedForm) await handleViewDetail(selectedForm.id);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setVerificationActionSubmitting(false);
     }
   };
 
@@ -257,6 +307,21 @@ const AdminWarrantyFormsModern = () => {
         );
       },
     },
+    {
+      key: 'verification',
+      header: t('verificationStatusColumn'),
+      // Manual Verification workflow — `equipment` already comes back on
+      // every list row (attachEquipment runs for the whole page, not just
+      // the detail view), so this needs no extra request. Quiet on purpose
+      // when nothing needs attention: only a still-PENDING row gets a badge
+      // here, same "no badge for the ordinary case" choice as AUTO rows
+      // inside the detail modal.
+      render: (f) => (
+        f.equipment?.some((e) => e.verification_status === 'PENDING')
+          ? <StatusBadge status="VERIFICATION_PENDING" />
+          : '—'
+      ),
+    },
   ];
 
   const renderActions = (form) => (
@@ -344,12 +409,22 @@ const AdminWarrantyFormsModern = () => {
 
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3">
               <Input
                 icon={Search}
                 placeholder={t('searchFormsPlaceholder')}
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
+              />
+              <Select
+                value={verificationFilter}
+                onChange={(e) => handleVerificationFilterChange(e.target.value)}
+                options={[
+                  { value: 'all', label: t('verificationFilterAll') },
+                  { value: 'PENDING', label: t('verificationStatusPending') },
+                  { value: 'APPROVED', label: t('verificationStatusApproved') },
+                  { value: 'REJECTED', label: t('verificationStatusRejected') },
+                ]}
               />
               <Select
                 value={pageSize}
@@ -406,6 +481,9 @@ const AdminWarrantyFormsModern = () => {
         form={selectedForm}
         t={t}
         language={language}
+        canReview
+        onApproveVerification={(equipmentId) => setApproveVerificationConfirm(equipmentId)}
+        onRejectVerification={(equipmentId) => setRejectVerificationTarget(equipmentId)}
       />
 
       {/* ── Edit modal ────────────────────────────────────────────────────────── */}
@@ -454,6 +532,27 @@ const AdminWarrantyFormsModern = () => {
         message={t('retrySyncConfirmMessage')}
         confirmText={t('retrySync')}
       />
+
+      {/* ── Manual Verification workflow — approve/reject ────────────────────── */}
+      <ConfirmModal
+        isOpen={!!approveVerificationConfirm}
+        onClose={() => setApproveVerificationConfirm(null)}
+        onConfirm={handleApproveVerification}
+        title={t('approveVerificationTitle')}
+        message={t('approveVerificationMessage')}
+        confirmText={t('approve')}
+      />
+
+      {rejectVerificationTarget && (
+        <RejectReasonModal
+          isOpen={!!rejectVerificationTarget}
+          onClose={() => setRejectVerificationTarget(null)}
+          onConfirm={handleRejectVerification}
+          submitting={verificationActionSubmitting}
+          title={t('rejectVerificationTitle')}
+          message={t('rejectVerificationMessage')}
+        />
+      )}
     </ModernAdminLayout>
   );
 };

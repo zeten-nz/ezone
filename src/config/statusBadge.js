@@ -35,4 +35,13 @@ export const STATUS_BADGE = {
   MANUAL_ADJUSTMENT:  { variant: 'warning', labelKey: 'pointsTypeManualAdjustment' },
   MANUAL_BONUS:       { variant: 'success', labelKey: 'pointsTypeManualBonus' },
   MANUAL_PENALTY:     { variant: 'danger',  labelKey: 'pointsTypeManualPenalty' },
+  // Manual Verification workflow (warranty_equipment.verification_status) —
+  // own label keys, same reasoning as SYNC_* above. No VERIFICATION_AUTO
+  // entry: AUTO is the ordinary, unremarkable default (every row before this
+  // feature existed, and most rows after) — callers simply don't render a
+  // badge for it at all rather than adding visual noise to every equipment
+  // row (see WarrantyDetailModal.jsx).
+  VERIFICATION_PENDING:  { variant: 'warning', labelKey: 'verificationStatusPending' },
+  VERIFICATION_APPROVED: { variant: 'success', labelKey: 'verificationStatusApproved' },
+  VERIFICATION_REJECTED: { variant: 'danger',  labelKey: 'verificationStatusRejected' },
 };

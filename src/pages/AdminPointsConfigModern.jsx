@@ -19,7 +19,9 @@ const PAGE_SIZE = 20;
 // Editable-in-place points cell — a Super Admin can type a new value and
 // save it; a plain Admin sees the current value read-only (view-only per the
 // Phase 3 plan's permission model — only Super Admins configure point values).
-const PointsCell = ({ productId, points, canEdit, onSaved }) => {
+// `onSave` owns the actual API call (per-product vs. per-equipment-type),
+// this component only owns the editing/saving UI, shared by both.
+const PointsCell = ({ points, canEdit, onSave, onSaved }) => {
   const { t } = useLanguage();
   const [value, setValue] = useState(String(points));
   const [saving, setSaving] = useState(false);
@@ -30,7 +32,7 @@ const PointsCell = ({ productId, points, canEdit, onSaved }) => {
     if (!Number.isInteger(parsed) || parsed < 0) return;
     setSaving(true);
     try {
-      await pointsAPI.setProductConfig(productId, parsed);
+      await onSave(parsed);
       onSaved(parsed);
     } finally {
       setSaving(false);
@@ -75,6 +77,13 @@ const AdminPointsConfigModern = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState(null);
 
+  // Typed-cylinder config — the only equipment slot that can currently be
+  // submitted with no catalog product (see WarrantyFormFields/EquipmentSection
+  // for the backend capability this exposes). Fetched separately from the
+  // per-product grid below since it has its own tiny endpoint, not paginated.
+  const [equipmentConfigs, setEquipmentConfigs] = useState([]);
+  const [equipmentConfigsLoading, setEquipmentConfigsLoading] = useState(true);
+
   useEffect(() => {
     setError(null);
     void (async () => {
@@ -89,6 +98,24 @@ const AdminPointsConfigModern = () => {
       }
     })();
   }, [currentPage, search, refreshKey]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await pointsAPI.getEquipmentTypeConfigs();
+        setEquipmentConfigs(response.data.data);
+      } catch {
+        setEquipmentConfigs([]);
+      } finally {
+        setEquipmentConfigsLoading(false);
+      }
+    })();
+  }, [refreshKey]);
+
+  const handleEquipmentConfigSaved = (equipmentType, newPoints) => {
+    setEquipmentConfigs((prev) => prev.map((c) => (c.equipment_type === equipmentType ? { ...c, points: newPoints } : c)));
+    setToast({ type: 'success', message: t('pointValueUpdated') });
+  };
 
   const handleRetry = () => {
     setLoading(true);
@@ -121,9 +148,9 @@ const AdminPointsConfigModern = () => {
       header: t('pointValueLabel'),
       render: (r) => (
         <PointsCell
-          productId={r.product_id}
           points={r.points}
           canEdit={canEdit}
+          onSave={(parsed) => pointsAPI.setProductConfig(r.product_id, parsed)}
           onSaved={(newPoints) => handleSaved(r.product_id, newPoints)}
         />
       ),
@@ -137,9 +164,9 @@ const AdminPointsConfigModern = () => {
         <p className="text-xs text-neutral-500 mt-0.5">{r.category}</p>
       </div>
       <PointsCell
-        productId={r.product_id}
         points={r.points}
         canEdit={canEdit}
+        onSave={(parsed) => pointsAPI.setProductConfig(r.product_id, parsed)}
         onSaved={(newPoints) => handleSaved(r.product_id, newPoints)}
       />
     </div>
@@ -181,6 +208,32 @@ const AdminPointsConfigModern = () => {
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {t('superAdminOnlyHint')}
           </div>
+        )}
+
+        {/* Typed cylinder — not a product, a per-equipment-type default for
+            the one slot that can be submitted with no catalog product at all
+            (a free-text brand/capacity). Kept visually separate from the
+            product grid below so it's never mistaken for "just another row". */}
+        {!equipmentConfigsLoading && equipmentConfigs.length > 0 && (
+          <Card>
+            <CardHeader>
+              <h2 className="text-base font-semibold text-neutral-900">{t('typedCylinderPointValue')}</h2>
+              <p className="text-sm text-neutral-500 mt-1">{t('typedCylinderPointValueHint')}</p>
+            </CardHeader>
+            <CardContent>
+              {equipmentConfigs.map((c) => (
+                <div key={c.equipment_type} className="flex items-center justify-between gap-4">
+                  <span className="font-medium text-neutral-900">{t('typedCylinderLabel')}</span>
+                  <PointsCell
+                    points={c.points}
+                    canEdit={canEdit}
+                    onSave={(parsed) => pointsAPI.setEquipmentTypeConfig(c.equipment_type, parsed)}
+                    onSaved={(newPoints) => handleEquipmentConfigSaved(c.equipment_type, newPoints)}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         )}
 
         <Card>

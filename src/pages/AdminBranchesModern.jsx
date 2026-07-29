@@ -135,7 +135,20 @@ const AdminBranchesModern = () => {
   };
 
   const columns = [
-    { key: 'code', header: t('branchCode'), render: (b) => <span className="font-mono text-neutral-900">{b.code}</span> },
+    {
+      key: 'code',
+      header: t('branchCode'),
+      render: (b) => (
+        <div className="min-w-0">
+          <span className="font-mono text-neutral-900">{b.code}</span>
+          {b.easygas_stag_code ? (
+            <span className="block text-xs font-mono text-blue-600 mt-0.5">STAG: {b.easygas_stag_code}</span>
+          ) : (
+            <span className="block text-xs text-amber-600 mt-0.5">{t('stagCodeMissing')}</span>
+          )}
+        </div>
+      ),
+    },
     { key: 'name', header: t('branchName'), render: (b) => b.name },
     { key: 'phone', header: t('phone'), render: (b) => b.phone || '—' },
     {

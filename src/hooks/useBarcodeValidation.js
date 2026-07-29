@@ -16,6 +16,14 @@ const useBarcodeValidation = (barcode, productId, equipmentType) => {
   const [status, setStatus] = useState('idle'); // idle | checking | valid | invalid
   const [product, setProduct] = useState(null);
   const [error, setError] = useState(null);
+  // Manual Verification workflow: EquipmentRow needs the precise reason this
+  // barcode failed, not just a display message — the "Enable manual
+  // verification" option only makes sense for BARCODE_NOT_FOUND specifically,
+  // never for BARCODE_WRONG_PRODUCT/BARCODE_WRONG_CATEGORY/
+  // BARCODE_PRODUCT_INACTIVE/BARCODE_NOT_AVAILABLE, which must keep blocking
+  // submission exactly as before. AppError already carries this — it just
+  // wasn't surfaced by this hook until now.
+  const [errorCode, setErrorCode] = useState(null);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -25,6 +33,7 @@ const useBarcodeValidation = (barcode, productId, equipmentType) => {
       setStatus('idle');
       setProduct(null);
       setError(null);
+      setErrorCode(null);
       return undefined;
     }
 
@@ -35,10 +44,12 @@ const useBarcodeValidation = (barcode, productId, equipmentType) => {
           setStatus('valid');
           setProduct(response.data.product);
           setError(null);
+          setErrorCode(null);
         })
         .catch((err) => {
           setStatus('invalid');
           setError(err.message);
+          setErrorCode(err.errorCode);
           setProduct(null);
         });
     }, DEBOUNCE_MS);
@@ -46,7 +57,7 @@ const useBarcodeValidation = (barcode, productId, equipmentType) => {
     return () => clearTimeout(timeoutRef.current);
   }, [barcode, productId, equipmentType]);
 
-  return { status, product, error };
+  return { status, product, error, errorCode };
 };
 
 export default useBarcodeValidation;

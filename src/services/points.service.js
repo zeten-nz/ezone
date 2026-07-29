@@ -22,6 +22,15 @@ export const pointsService = {
   setProductConfig: (productId, points) =>
     client.put(`/points/configs/${productId}`, { points }),
 
+  // ADMIN (view) — the typed-cylinder point value (the only equipment slot
+  // that can currently be submitted with no catalog product).
+  getEquipmentTypeConfigs: () =>
+    client.get('/points/equipment-configs'),
+
+  // Super Admin only.
+  setEquipmentTypeConfig: (equipmentType, points) =>
+    client.put(`/points/equipment-configs/${equipmentType}`, { points }),
+
   // Super Admin only. idempotencyKey is client-generated so a retried/
   // double-clicked submission can't create a duplicate manual transaction.
   createAdjustment: (installerId, points, type, reason) =>

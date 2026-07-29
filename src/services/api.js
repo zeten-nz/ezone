@@ -51,12 +51,16 @@ export const userAPI = {
 export const warrantyAPI = {
   createForm:    (data)                     => warrantyService.create(data),
   updateForm:    (formId, data)             => warrantyService.update(formId, data),
-  getAllForms:   (page, limit, search, employeeId) => warrantyService.getAll(page, limit, search, employeeId),
+  getAllForms:   (page, limit, search, employeeId, verificationStatus) => warrantyService.getAll(page, limit, search, employeeId, verificationStatus),
   getMyForms:   (page, limit, search)       => warrantyService.getMyForms(page, limit, search),
   getFormDetail: (formId)                   => warrantyService.getById(formId),
   deleteForm:    (formId)                   => warrantyService.delete(formId),
   searchForms:   (search, filterType)       => warrantyService.search(search, filterType),
   retrySync:     (formId)                   => warrantyService.retrySync(formId),
+  approveVerification:    (equipmentId, notes) => warrantyService.approveVerification(equipmentId, notes),
+  rejectVerification:     (equipmentId, notes) => warrantyService.rejectVerification(equipmentId, notes),
+  uploadEquipmentPhoto:   (photo)              => warrantyService.uploadEquipmentPhoto(photo),
+  getEquipmentPhotoBlob:  (equipmentId)        => warrantyService.getEquipmentPhotoBlob(equipmentId),
 };
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -88,6 +92,7 @@ export const branchAPI = {
   update:    (branchId, data)      => branchesService.update(branchId, data),
   disable:   (branchId)            => branchesService.disable(branchId),
   enable:    (branchId)            => branchesService.enable(branchId),
+  getEasyGasBranches: ()           => branchesService.getEasyGasBranches(),
 };
 
 // ── Products (admin CRUD; search/brands usable by any authenticated role) ───
@@ -144,6 +149,8 @@ export const pointsAPI = {
   getForInstaller:     (installerId, page, limit)        => pointsService.getForInstaller(installerId, page, limit),
   getProductConfigs:   (page, limit, search)             => pointsService.getProductConfigs(page, limit, search),
   setProductConfig:    (productId, points)               => pointsService.setProductConfig(productId, points),
+  getEquipmentTypeConfigs: ()                            => pointsService.getEquipmentTypeConfigs(),
+  setEquipmentTypeConfig: (equipmentType, points)        => pointsService.setEquipmentTypeConfig(equipmentType, points),
   createAdjustment:    (installerId, points, type, reason) => pointsService.createAdjustment(installerId, points, type, reason),
 };
 

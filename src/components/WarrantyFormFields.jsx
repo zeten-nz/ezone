@@ -125,7 +125,16 @@ export const validateWarrantyForm = (formData, t) => {
 
   const equipmentErrors = {};
   (formData.equipment || []).forEach((row) => {
-    if (!row.product) equipmentErrors[row.equipment_type] = t('valProductRequired');
+    if (!row.product) {
+      equipmentErrors[row.equipment_type] = t('valProductRequired');
+    } else if (row.manual_verification && (!row.seller_name?.trim() || !row.seller_phone?.trim() || !row.comment?.trim())) {
+      // Manual Verification workflow — a row can only ever hit ONE of these
+      // two equipment-level problems at a time: manual_verification is never
+      // enabled without a product already selected first (see
+      // EquipmentRow.jsx's canOfferManualVerification), so this branch and
+      // the one above are mutually exclusive in practice.
+      equipmentErrors[row.equipment_type] = t('valSellerInfoRequired');
+    }
   });
   if (Object.keys(equipmentErrors).length > 0) {
     errors.equipment = equipmentErrors;

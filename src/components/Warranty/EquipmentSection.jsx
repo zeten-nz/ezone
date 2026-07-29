@@ -1,4 +1,5 @@
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, XCircle, Loader2, AlertTriangle, Camera, X } from 'lucide-react';
 import Select from '../UI/Select';
 import Autocomplete from '../UI/Autocomplete';
 import Input from '../UI/Input';
@@ -7,6 +8,7 @@ import useBrandOptions from '../../hooks/useBrandOptions';
 import useBarcodeValidation from '../../hooks/useBarcodeValidation';
 import { useLanguage } from '../../context/LanguageContext';
 import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
+import { warrantyAPI } from '../../services/api';
 
 const fuelTypeOptions = (t) => [
   { value: '', label: t('selectOption') },
@@ -27,6 +29,8 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
   // enforces this happens server-side at submission time (see
   // ezone-server/services/warrantyService.js). Nothing here blocks typing.
   const barcodeCheck = useBarcodeValidation(row.serial_number, row.product?.id, row.equipment_type);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState(null);
 
   const brandOptions = [
     { value: '', label: brandsLoading ? t('loadingResults') : t('selectOption') },
@@ -42,12 +46,45 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
   };
 
   const handleSelectProduct = (product) => {
-    onChange({ ...row, product: { id: product.id, name: `${product.brand} ${product.model || ''}`.trim() } });
+    // A different product invalidates any Manual Verification state that
+    // was attached to the previous product/barcode combination too — it's
+    // no longer the same claim.
+    onChange({
+      ...row,
+      product: { id: product.id, name: `${product.brand} ${product.model || ''}`.trim() },
+      manual_verification: false, seller_name: '', seller_phone: '', comment: '', manual_verification_photo_filename: null,
+    });
   };
 
   const handleQueryChange = (value) => {
     setQuery(value);
     if (row.product) onChange({ ...row, product: null });
+  };
+
+  // Manual Verification workflow — only offered for the one failure it's
+  // meant to cover. Wrong product/wrong category/inactive/not-available all
+  // continue to block submission with no way around them, exactly as before.
+  const canOfferManualVerification = barcodeCheck.status === 'invalid' && barcodeCheck.errorCode === 'BARCODE_NOT_FOUND';
+
+  const handleEnableManualVerification = () => onChange({ ...row, manual_verification: true });
+  const handleDisableManualVerification = () => onChange({
+    ...row, manual_verification: false, seller_name: '', seller_phone: '', comment: '', manual_verification_photo_filename: null,
+  });
+
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // always reset so re-selecting the same file re-fires onChange
+    if (!file) return;
+    setUploadingPhoto(true);
+    setPhotoError(null);
+    try {
+      const response = await warrantyAPI.uploadEquipmentPhoto(file);
+      onChange({ ...row, manual_verification_photo_filename: response.data.filename });
+    } catch (err) {
+      setPhotoError(err.message);
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   return (
@@ -69,7 +106,12 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
           loading={loading}
           onSelect={handleSelectProduct}
           getOptionLabel={(p) => `${p.brand} ${p.model || ''}`.trim()}
-          error={error}
+          // Manual Verification workflow: once enabled, a product is always
+          // already selected (see canOfferManualVerification below), so a
+          // validation error at this point is never "product missing" — it's
+          // "seller info missing," shown near the seller fields instead (see
+          // valSellerInfoRequired below) rather than misleadingly under Product.
+          error={row.manual_verification ? undefined : error}
           disabled={!row.brand}
         />
         <div>
@@ -80,23 +122,100 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
             onChange={(e) => onChange({ ...row, serial_number: e.target.value })}
             disabled={!row.product}
           />
-          {barcodeCheck.status === 'checking' && (
-            <p className="flex items-center gap-1 text-xs text-neutral-500 mt-1.5">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('barcodeChecking')}
-            </p>
-          )}
-          {barcodeCheck.status === 'valid' && barcodeCheck.product && (
-            <p className="flex items-center gap-1 text-xs text-green-600 mt-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" /> {barcodeCheck.product.brand} {barcodeCheck.product.model || ''}
-            </p>
-          )}
-          {barcodeCheck.status === 'invalid' && (
-            <p className="flex items-center gap-1 text-xs text-red-600 mt-1.5">
-              <XCircle className="w-3.5 h-3.5" /> {barcodeCheck.error}
-            </p>
+          {!row.manual_verification && (
+            <>
+              {barcodeCheck.status === 'checking' && (
+                <p className="flex items-center gap-1 text-xs text-neutral-500 mt-1.5">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('barcodeChecking')}
+                </p>
+              )}
+              {barcodeCheck.status === 'valid' && barcodeCheck.product && (
+                <p className="flex items-center gap-1 text-xs text-green-600 mt-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {barcodeCheck.product.brand} {barcodeCheck.product.model || ''}
+                </p>
+              )}
+              {barcodeCheck.status === 'invalid' && (
+                <>
+                  <p className="flex items-center gap-1 text-xs text-red-600 mt-1.5">
+                    <XCircle className="w-3.5 h-3.5" /> {barcodeCheck.error}
+                  </p>
+                  {canOfferManualVerification && (
+                    <button
+                      type="button"
+                      onClick={handleEnableManualVerification}
+                      className="text-xs text-blue-600 hover:text-blue-700 underline underline-offset-2 mt-1.5"
+                    >
+                      {t('enableManualVerification')}
+                    </button>
+                  )}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {row.manual_verification && (
+        <div className="pt-4 border-t border-neutral-100 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> {t('manualVerificationModeLabel')}
+            </p>
+            <button
+              type="button"
+              onClick={handleDisableManualVerification}
+              className="text-xs text-neutral-500 hover:text-neutral-700 underline underline-offset-2 flex-shrink-0"
+            >
+              {t('disableManualVerification')}
+            </button>
+          </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label={t('sellerName')}
+              value={row.seller_name}
+              onChange={(e) => onChange({ ...row, seller_name: e.target.value })}
+              required
+            />
+            <Input
+              label={t('sellerPhone')}
+              type="tel"
+              value={row.seller_phone}
+              onChange={(e) => onChange({ ...row, seller_phone: e.target.value })}
+              required
+            />
+            <Input
+              label={t('verificationComment')}
+              value={row.comment}
+              onChange={(e) => onChange({ ...row, comment: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-neutral-700 mb-2">{t('verificationPhotoOptional')}</p>
+            {row.manual_verification_photo_filename ? (
+              <div className="flex items-center gap-2 text-xs text-green-600">
+                <CheckCircle2 className="w-3.5 h-3.5" /> {t('photoAttached')}
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...row, manual_verification_photo_filename: null })}
+                  className="text-neutral-400 hover:text-red-600"
+                  title={t('removePhoto')}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-50 transition-colors cursor-pointer">
+                {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                {uploadingPhoto ? t('uploadingPhoto') : t('attachPhoto')}
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoSelect} disabled={uploadingPhoto} />
+              </label>
+            )}
+            {photoError && <p className="text-xs text-red-600 mt-1.5">{photoError}</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
