@@ -6,7 +6,7 @@ const DEBOUNCE_MS = 250;
 /**
  * Debounced search over the full admin product list (any category, not
  * scoped to one warranty equipment slot like useProductSearch) — backs the
- * Inventory CSV import picker, where any synced EasyGas product is valid.
+ * Inventory CSV import picker, where any active catalog product is valid.
  */
 const useAdminProductSearch = (query) => {
   const [results, setResults] = useState([]);

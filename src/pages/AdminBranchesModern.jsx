@@ -138,16 +138,7 @@ const AdminBranchesModern = () => {
     {
       key: 'code',
       header: t('branchCode'),
-      render: (b) => (
-        <div className="min-w-0">
-          <span className="font-mono text-neutral-900">{b.code}</span>
-          {b.easygas_stag_code ? (
-            <span className="block text-xs font-mono text-blue-600 mt-0.5">STAG: {b.easygas_stag_code}</span>
-          ) : (
-            <span className="block text-xs text-amber-600 mt-0.5">{t('stagCodeMissing')}</span>
-          )}
-        </div>
-      ),
+      render: (b) => <span className="font-mono text-neutral-900">{b.code}</span>,
     },
     { key: 'name', header: t('branchName'), render: (b) => b.name },
     { key: 'phone', header: t('phone'), render: (b) => b.phone || '—' },
@@ -195,7 +186,9 @@ const AdminBranchesModern = () => {
           <p className="font-medium text-neutral-900 truncate">{b.name}</p>
           <p className="text-xs text-neutral-500 mt-0.5 font-mono">{b.code}</p>
         </div>
-        <StatusBadge status={b.is_active ? 'ACTIVE' : 'DISABLED'} />
+        <div className="flex flex-col items-end gap-1">
+          <StatusBadge status={b.is_active ? 'ACTIVE' : 'DISABLED'} />
+        </div>
       </div>
       <dl className="grid grid-cols-2 gap-2 text-xs">
         <div><dt className="text-neutral-400">{t('phone')}</dt><dd className="text-neutral-700 font-medium truncate">{b.phone || '—'}</dd></div>

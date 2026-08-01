@@ -31,22 +31,13 @@ const ERROR_CODE_MESSAGES = {
   EQUIPMENT_INCOMPLETE: { uz: "Barcha 4 ta jihoz turini tanlashingiz kerak (Redyuktor, Tsilindr, Kontroller, Injektor relsi).", ru: 'Необходимо выбрать все 4 типа оборудования (Редуктор, Цилиндр, Контроллер, Инжекторная рейка).' },
   PRODUCT_INACTIVE: { uz: 'Tanlangan mahsulot endi faol emas.', ru: 'Выбранный продукт больше не активен.' },
   PRODUCT_IN_USE: { uz: "Bu mahsulot mavjud kafolatlarda ishlatilgan va o'chirib bo'lmaydi — uni faolsizlantiring.", ru: 'Этот продукт используется в существующих гарантиях и не может быть удалён — деактивируйте его.' },
+  BRAND_NOT_FOUND: { uz: "Tanlangan brend mavjud emas.", ru: 'Выбранный бренд не существует.' },
+  BRAND_IN_USE: { uz: "Bu brend mahsulotlarda ishlatilmoqda va o'chirilmaydi — uni faolsizlantiring.", ru: 'Этот бренд используется в продуктах и не может быть удалён — деактивируйте его.' },
+  CAR_IN_USE: { uz: "Bu avtomobil kafolatlarda ishlatilmoqda va o'chirilmaydi — uni faolsizlantiring.", ru: 'Этот автомобиль используется в гарантиях и не может быть удалён — деактивируйте его.' },
   TOO_MANY_REQUESTS: { uz: "So'rovlar soni juda ko'p. Birozdan so'ng qayta urinib ko'ring.", ru: 'Слишком много запросов. Повторите попытку позже.' },
   TIMEOUT: { uz: "So'rov vaqti tugadi. Qaytadan urinib ko'ring.", ru: 'Время ожидания истекло. Попробуйте снова.' },
   NETWORK_ERROR: { uz: 'Internet aloqasini tekshiring.', ru: 'Проверьте подключение к интернету.' },
   UNKNOWN_ERROR: { uz: "Nimadir xato ketdi. Qaytadan urinib ko'ring.", ru: 'Что-то пошло не так. Попробуйте снова.' },
-
-  // EasyGas sync failure codes (see ezone-server/services/easyGasSyncService.js's
-  // classifyResult) — these aren't HTTP-response errorCodes from our own API;
-  // they're parsed out of a warranty row's stored easygas_last_error text by
-  // the admin Sync Status badge (AdminWarrantyFormsModern.jsx) to show a
-  // translated reason instead of raw English debug text.
-  PRODUCT_UNKNOWN: { uz: "EasyGas ushbu mahsulotni o'z katalogida topa olmadi.", ru: 'EasyGas не нашёл этот продукт в своём каталоге.' },
-  FIELD_TOO_LONG: { uz: "Maydonlardan biri EasyGas uchun juda uzun.", ru: 'Одно из полей слишком длинное для EasyGas.' },
-  INVALID_VALUE: { uz: "Maydonlardan birida noto'g'ri qiymat bor.", ru: 'В одном из полей указано недопустимое значение.' },
-  INVALID_DATE: { uz: "Sana noto'g'ri yoki qabul qilinishi mumkin emas.", ru: 'Дата некорректна или не может быть принята.' },
-  WARRANTY_LOCKED: { uz: "Bu kafolat EasyGas tomonidan qulflangan (odatda 24 soatdan keyin) — endi sinxronlanmaydi.", ru: 'Эта гарантия заблокирована в EasyGas (обычно через 24 часа) — синхронизация больше невозможна.' },
-  PRODUCT_NOT_MAPPED: { uz: "Ushbu jihoz uchun mahsulot hali EasyGas katalogiga bog'lanmagan.", ru: 'Продукт для этого оборудования ещё не сопоставлен с каталогом EasyGas.' },
 
   // Inventory barcode validation (Phase 2 — see ezone-server/services/inventoryService.js's
   // validateBarcode) — returned both by the instant-feedback

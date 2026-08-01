@@ -10,13 +10,6 @@ export const STATUS_BADGE = {
   PENDING:   { variant: 'warning', labelKey: 'statusPending' },
   APPROVED:  { variant: 'success', labelKey: 'statusApproved' },
   REJECTED:  { variant: 'neutral', labelKey: 'statusRejected' },
-  // EasyGas warranty sync status (warranty_forms.easygas_sync_status) — own
-  // label keys rather than reusing PENDING's statusPending, which reads
-  // naturally for a registration request but not for a sync queue state.
-  SYNC_PENDING: { variant: 'neutral', labelKey: 'syncStatusPending' },
-  SYNC_SYNCING: { variant: 'warning', labelKey: 'syncStatusSyncing' },
-  SYNC_SYNCED:  { variant: 'success', labelKey: 'syncStatusSynced' },
-  SYNC_FAILED:  { variant: 'danger',  labelKey: 'syncStatusFailed' },
   // Physical inventory item status (inventory_items.status) — own label
   // keys. IN_STOCK's labelKey text was relabeled "Available" in Phase 4
   // (the ENUM value/all SQL/JS comparisons stay 'IN_STOCK' — display-only

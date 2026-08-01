@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Award, Package, TrendingUp, XCircle, Coins, Download, FileSearch } from 'lucide-react';
+import { Search, Award, Package, Coins, Download, FileSearch } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { userAPI, reportsAPI, exportCsvAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -60,10 +60,8 @@ const InstallerStatisticsModal = ({ installer, onClose }) => {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <StatTile index={0} label={t('warrantyCount')} value={data.totalWarranties} icon={Award} />
             <StatTile index={1} label={t('totalClaimedInventoryLabel')} value={data.totalClaimedInventory} icon={Package} />
-            <StatTile index={2} label={t('successfulInstallsLabel')} value={data.successfulInstalls} icon={TrendingUp} />
-            <StatTile index={3} label={t('rejectedInstallsLabel')} value={data.rejectedInstalls} icon={XCircle} />
-            <StatTile index={4} label={t('monthlyPoints')} value={data.monthlyPoints} icon={Coins} />
-            <StatTile index={5} label={t('lifetimePoints')} value={data.lifetimePoints} icon={Coins} />
+            <StatTile index={2} label={t('monthlyPoints')} value={data.monthlyPoints} icon={Coins} />
+            <StatTile index={3} label={t('lifetimePoints')} value={data.lifetimePoints} icon={Coins} />
           </div>
 
           <div>

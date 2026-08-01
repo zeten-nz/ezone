@@ -72,11 +72,6 @@ export const warrantyService = {
   search: (search, filterType) =>
     client.get('/warranty/search', { params: { search, filterType } }),
 
-  // Admin-only manual retry for a warranty stuck in FAILED EasyGas sync
-  // status — resets it to PENDING for the next sweep cycle.
-  retrySync: (formId) =>
-    client.post(`/warranty/${formId}/retry-sync`),
-
   // ── Manual Verification workflow (admin review) ─────────────────────────
   approveVerification: (equipmentId, notes) =>
     client.post(`/warranty/equipment/${equipmentId}/approve-verification`, { notes }),

@@ -10,7 +10,15 @@ import client from '../api/client';
 
 export const exportCsvService = {
   inventory: () => client.get('/export-csv/inventory.csv', { responseType: 'blob' }),
-  warranty: (employeeId) => client.get('/export-csv/warranty.csv', { responseType: 'blob', params: employeeId ? { employeeId } : {} }),
+  warranty: (employeeId, search, verificationStatus) =>
+    client.get('/export-csv/warranty.csv', {
+      responseType: 'blob',
+      params: {
+        ...(employeeId ? { employeeId } : {}),
+        ...(search ? { search } : {}),
+        ...(verificationStatus ? { verificationStatus } : {}),
+      },
+    }),
   points: () => client.get('/export-csv/points.csv', { responseType: 'blob' }),
   reports: () => client.get('/export-csv/reports.csv', { responseType: 'blob' }),
   installerStatistics: () => client.get('/export-csv/installer-statistics.csv', { responseType: 'blob' }),

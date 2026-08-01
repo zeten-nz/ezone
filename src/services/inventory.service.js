@@ -1,6 +1,6 @@
 /**
  * INVENTORY SERVICE
- * Physical-unit tracking on top of the EasyGas-synced products catalog.
+ * Physical-unit tracking on top of the local products catalog.
  * See ezone-server/controllers/inventoryController.js.
  */
 

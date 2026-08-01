@@ -10,7 +10,6 @@ export const buildCreateBranchSchema = (t) => z.object({
   region: z.string().optional(),
   district: z.string().optional(),
   city: z.string().optional(),
-  easygas_stag_code: z.string().trim().max(20, t('valStagCodeTooLong')).optional(),
 });
 
 export const buildEditBranchSchema = (t) => z.object({
@@ -19,5 +18,4 @@ export const buildEditBranchSchema = (t) => z.object({
   region: z.string().optional(),
   district: z.string().optional(),
   city: z.string().optional(),
-  easygas_stag_code: z.string().trim().max(20, t('valStagCodeTooLong')).optional(),
 });

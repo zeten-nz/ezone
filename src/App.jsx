@@ -39,6 +39,8 @@ const AdminUsersModern              = lazy(() => import('./pages/AdminUsersModer
 const AdminWarrantyFormsModern      = lazy(() => import('./pages/AdminWarrantyFormsModern'));
 const AdminRegistrationRequestsModern = lazy(() => import('./pages/AdminRegistrationRequestsModern'));
 const AdminBranchesModern           = lazy(() => import('./pages/AdminBranchesModern'));
+const AdminBrandsModern             = lazy(() => import('./pages/AdminBrandsModern'));
+const AdminCarsModern               = lazy(() => import('./pages/AdminCarsModern'));
 const AdminProductsModern           = lazy(() => import('./pages/AdminProductsModern'));
 const AdminInventoryModern          = lazy(() => import('./pages/AdminInventoryModern'));
 const AdminReportsModern            = lazy(() => import('./pages/AdminReportsModern'));
@@ -188,6 +190,22 @@ function App() {
                       element={
                         <ErrorBoundary name="BranchesBoundary" inline>
                           <AdminBranchesModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/brands"
+                      element={
+                        <ErrorBoundary name="BrandsBoundary" inline>
+                          <AdminBrandsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/cars"
+                      element={
+                        <ErrorBoundary name="CarsBoundary" inline>
+                          <AdminCarsModern />
                         </ErrorBoundary>
                       }
                     />

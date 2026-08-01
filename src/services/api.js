@@ -18,6 +18,7 @@ import { dashboardService }            from './dashboard.service';
 import { exportService }               from './export.service';
 import { registrationRequestsService } from './registrationRequests.service';
 import { branchesService }             from './branches.service';
+import { brandsService }               from './brands.service';
 import { productsService }             from './products.service';
 import { reportsService }              from './reports.service';
 import { carsService }                 from './cars.service';
@@ -56,7 +57,6 @@ export const warrantyAPI = {
   getFormDetail: (formId)                   => warrantyService.getById(formId),
   deleteForm:    (formId)                   => warrantyService.delete(formId),
   searchForms:   (search, filterType)       => warrantyService.search(search, filterType),
-  retrySync:     (formId)                   => warrantyService.retrySync(formId),
   approveVerification:    (equipmentId, notes) => warrantyService.approveVerification(equipmentId, notes),
   rejectVerification:     (equipmentId, notes) => warrantyService.rejectVerification(equipmentId, notes),
   uploadEquipmentPhoto:   (photo)              => warrantyService.uploadEquipmentPhoto(photo),
@@ -92,7 +92,17 @@ export const branchAPI = {
   update:    (branchId, data)      => branchesService.update(branchId, data),
   disable:   (branchId)            => branchesService.disable(branchId),
   enable:    (branchId)            => branchesService.enable(branchId),
-  getEasyGasBranches: ()           => branchesService.getEasyGasBranches(),
+};
+
+// ── Brands (admin CRUD; active list usable by any authenticated role) ───────
+export const brandAPI = {
+  getAll:     (page, limit, search)  => brandsService.getAll(page, limit, search),
+  getActive:  ()                     => brandsService.getActive(),
+  create:     (data)                 => brandsService.create(data),
+  update:     (brandId, data)        => brandsService.update(brandId, data),
+  activate:   (brandId)              => brandsService.activate(brandId),
+  deactivate: (brandId)              => brandsService.deactivate(brandId),
+  delete:     (brandId)              => brandsService.delete(brandId),
 };
 
 // ── Products (admin CRUD; search/brands usable by any authenticated role) ───
@@ -125,9 +135,15 @@ export const reportsAPI = {
   getWarehouseStatistics:     (branchId)             => reportsService.getWarehouseStatistics(branchId),
 };
 
-// ── Vehicle catalog (any authenticated role) ─────────────────────────────────
+// ── Vehicle catalog (admin CRUD; search usable by any authenticated role) ───
 export const carAPI = {
-  search: (query) => carsService.search(query),
+  search:     (query)                => carsService.search(query),
+  getAll:     (page, limit, search)  => carsService.getAll(page, limit, search),
+  create:     (data)                 => carsService.create(data),
+  update:     (carId, data)          => carsService.update(carId, data),
+  activate:   (carId)                => carsService.activate(carId),
+  deactivate: (carId)                => carsService.deactivate(carId),
+  delete:     (carId)                => carsService.delete(carId),
 };
 
 // ── Inventory (admin) ─────────────────────────────────────────────────────
@@ -157,7 +173,7 @@ export const pointsAPI = {
 // ── CSV export (Phase 4 — streamed, distinct from exportAPI's XLSX) ─────────
 export const exportCsvAPI = {
   inventory:            () => exportCsvService.inventory(),
-  warranty:              (employeeId) => exportCsvService.warranty(employeeId),
+  warranty:              (employeeId, search, verificationStatus) => exportCsvService.warranty(employeeId, search, verificationStatus),
   points:                () => exportCsvService.points(),
   reports:                () => exportCsvService.reports(),
   installerStatistics:    () => exportCsvService.installerStatistics(),

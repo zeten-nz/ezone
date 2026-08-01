@@ -11,8 +11,18 @@ const DEBOUNCE_MS = 400;
  * with that authoritative server-side check (both call
  * inventoryService.validateBarcode), so what the installer sees here always
  * matches what submission will actually enforce.
+ *
+ * `originalSerialNumber`/`originalProductId` (only ever set when editing an
+ * existing warranty — see config/equipmentCategories.js's toEditableEquipment)
+ * let this hook recognize "this row is exactly what's already saved" and
+ * skip the live availability check entirely, instead of asking the server
+ * whether an already-installed-by-THIS-warranty barcode is "available" —
+ * which it correctly isn't, but that's not a question this row needs
+ * answered. This mirrors the same unchanged-row distinction
+ * warrantyService.updateWarrantyForm already makes before ever touching
+ * inventory; nothing about the authoritative server-side check changes.
  */
-const useBarcodeValidation = (barcode, productId, equipmentType) => {
+const useBarcodeValidation = (barcode, productId, equipmentType, originalSerialNumber, originalProductId) => {
   const [status, setStatus] = useState('idle'); // idle | checking | valid | invalid
   const [product, setProduct] = useState(null);
   const [error, setError] = useState(null);
@@ -30,6 +40,16 @@ const useBarcodeValidation = (barcode, productId, equipmentType) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     if (!barcode || !barcode.trim() || !productId) {
+      setStatus('idle');
+      setProduct(null);
+      setError(null);
+      setErrorCode(null);
+      return undefined;
+    }
+
+    const isUnchangedFromSaved =
+      originalSerialNumber != null && barcode.trim() === originalSerialNumber && productId === originalProductId;
+    if (isUnchangedFromSaved) {
       setStatus('idle');
       setProduct(null);
       setError(null);
@@ -55,7 +75,7 @@ const useBarcodeValidation = (barcode, productId, equipmentType) => {
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timeoutRef.current);
-  }, [barcode, productId, equipmentType]);
+  }, [barcode, productId, equipmentType, originalSerialNumber, originalProductId]);
 
   return { status, product, error, errorCode };
 };

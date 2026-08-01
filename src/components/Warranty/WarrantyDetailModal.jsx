@@ -4,8 +4,6 @@ import StatusBadge from '../UI/StatusBadge';
 import Button from '../UI/Button';
 import AuthenticatedPhoto from '../UI/AuthenticatedPhoto';
 import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
-import { getErrorMessage } from '../../config/errorCodes';
-import { extractSyncErrorCode } from '../../utils/syncErrorCode';
 import { warrantyAPI } from '../../services/api';
 
 const FUEL_DOT = { LPG: 'bg-blue-600', CNG: 'bg-emerald-500' };
@@ -123,17 +121,6 @@ const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz', onAppr
       <div className="space-y-5">
         <Section title={t('warrantyInfo')}>
           <Field label={t('warrantyBookNumber')} value={form.warranty_book_number} />
-          <div>
-            <p className="text-xs text-neutral-500">{t('syncStatus')}</p>
-            <div className="mt-1">
-              <StatusBadge status={`SYNC_${form.easygas_sync_status}`} />
-            </div>
-            {form.easygas_sync_status === 'FAILED' && extractSyncErrorCode(form.easygas_last_error) && (
-              <p className="text-xs text-neutral-500 mt-1" title={form.easygas_last_error}>
-                {getErrorMessage(extractSyncErrorCode(form.easygas_last_error), null, language)}
-              </p>
-            )}
-          </div>
           <Field label={t('installationDate')} value={form.installation_date ? new Date(form.installation_date).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'uz-UZ') : null} />
           <Field label={t('organizationName')} value={form.installer?.branch} />
           <Field label={t('employee')} value={form.employee_name} />

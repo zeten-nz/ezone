@@ -27,10 +27,4 @@ export const branchesService = {
 
   enable: (branchId) =>
     client.patch(`/branches/${branchId}/enable`),
-
-  // ADMIN — live, uncached passthrough of EasyGas's real branch list
-  // ({stag_code, name, region_id}), used to look up the value to enter as
-  // easygas_stag_code below. Not a sync — just a reference lookup.
-  getEasyGasBranches: () =>
-    client.get('/branches/easygas'),
 };

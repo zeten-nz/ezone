@@ -19,7 +19,7 @@ const EmployeeWarrantyFormModern = () => {
   const [errors, setErrors] = useState({});
   const [scannerOpen, setScannerOpen] = useState(false);
   // Lazy initializer — createEmptyWarrantyForm() mints a fresh
-  // submission_uuid (EasyGas's idempotency key for this warranty), so it
+  // submission_uuid (this warranty's local create-idempotency key), so it
   // must only run once per form instance, not on every re-render.
   const [formData, setFormData] = useState(() => createEmptyWarrantyForm());
 
@@ -47,8 +47,13 @@ const EmployeeWarrantyFormModern = () => {
         setFormData(createEmptyWarrantyForm());
         setSubmitted(false);
       }, 2000);
-    } catch {
-      setToast({ type: 'error', message: t('errorSubmittingForm') });
+    } catch (err) {
+      // err.message is already the correctly translated, user-facing text
+      // for this errorCode (see src/api/client.js's response interceptor,
+      // which builds it via config/errorCodes.js) — showing it instead of a
+      // generic fallback is what lets a specific, actionable failure reach
+      // the installer at all.
+      setToast({ type: 'error', message: err.message || t('errorSubmittingForm') });
     } finally {
       setLoading(false);
     }

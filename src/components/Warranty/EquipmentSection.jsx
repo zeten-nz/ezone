@@ -21,14 +21,17 @@ const fuelTypeOptions = (t) => [
 // fuel_type}) or an existing warranty being edited (product_id/product_name
 // from the DTO) both collapse to this one shape so the rest of this
 // component never needs to know which case it's looking at.
-const EquipmentRow = ({ row, fuelType, onChange, error }) => {
+const EquipmentRow = ({ row, fuelType, onChange, error, onApplySellerToAll, canApplySellerToAll, suggestedSeller, onUseSuggestedSeller, onDismissSuggestion }) => {
   const { t } = useLanguage();
   const { brands, loading: brandsLoading } = useBrandOptions(row.equipment_type);
   const { query, setQuery, results, loading } = useProductSearch(row.equipment_type, row.brand, fuelType);
   // Instant, read-only feedback only — the atomic claim that actually
   // enforces this happens server-side at submission time (see
   // ezone-server/services/warrantyService.js). Nothing here blocks typing.
-  const barcodeCheck = useBarcodeValidation(row.serial_number, row.product?.id, row.equipment_type);
+  const barcodeCheck = useBarcodeValidation(
+    row.serial_number, row.product?.id, row.equipment_type,
+    row.original_serial_number, row.original_product_id
+  );
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(null);
 
@@ -170,6 +173,41 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
             </button>
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
+          {suggestedSeller && (
+            <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 space-y-2">
+              <p className="text-sm font-medium text-blue-900">{t('reuseSellerSuggestionTitle')}</p>
+              <div className="text-xs text-blue-800 space-y-0.5">
+                <p>{t('sellerName')}: {suggestedSeller.seller_name}</p>
+                <p>{t('sellerPhone')}: {suggestedSeller.seller_phone}</p>
+                {suggestedSeller.comment && <p>{t('verificationComment')}: {suggestedSeller.comment}</p>}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={onUseSuggestedSeller}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  {t('useSameSellerAction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={onDismissSuggestion}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md border border-blue-300 text-blue-700 hover:bg-blue-100"
+                >
+                  {t('enterDifferentSellerAction')}
+                </button>
+              </div>
+            </div>
+          )}
+          {canApplySellerToAll && (row.seller_name || row.seller_phone || row.comment) && (
+            <button
+              type="button"
+              onClick={onApplySellerToAll}
+              className="text-xs text-blue-600 hover:text-blue-700 underline underline-offset-2"
+            >
+              {t('applySellerToAllLabel')}
+            </button>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
               label={t('sellerName')}
@@ -232,8 +270,52 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
 const EquipmentSection = ({ fuelType, onFuelTypeChange, equipment, onChange, errors = {}, fuelTypeError }) => {
   const { t } = useLanguage();
 
+  // "Reuse last seller information" — separate from, and coexists with,
+  // "Apply to all" below. lastUsedSeller is a live mirror of whichever
+  // Manual Verification row's seller fields were most recently touched
+  // (never the photo), so a suggestion always reflects the actual most
+  // recent seller regardless of which of the 4 fixed rows it came from.
+  // dismissedSuggestions (keyed by the row's own equipment_type, already a
+  // stable unique id) tracks "never show again for this row" once the
+  // installer picks either button — permanent for the rest of this form
+  // session, not reset by later edits to that row.
+  const [lastUsedSeller, setLastUsedSeller] = useState(null);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState({});
+
   const handleRowChange = (index, updatedRow) => {
     onChange(equipment.map((row, i) => (i === index ? updatedRow : row)));
+    if (updatedRow.manual_verification && (updatedRow.seller_name || updatedRow.seller_phone || updatedRow.comment)) {
+      setLastUsedSeller({
+        seller_name: updatedRow.seller_name,
+        seller_phone: updatedRow.seller_phone,
+        comment: updatedRow.comment,
+      });
+    }
+  };
+
+  const handleUseSuggestedSeller = (index) => {
+    handleRowChange(index, { ...equipment[index], ...lastUsedSeller });
+    setDismissedSuggestions((prev) => ({ ...prev, [equipment[index].equipment_type]: true }));
+  };
+
+  const handleDismissSuggestion = (index) => {
+    setDismissedSuggestions((prev) => ({ ...prev, [equipment[index].equipment_type]: true }));
+  };
+
+  // Manual Verification workflow — lets one seller's info (name/phone/
+  // comment, never the photo — a photo documents one specific item/receipt,
+  // not interchangeable across rows) be copied from the row the installer
+  // just filled in onto every OTHER row still open for manual verification,
+  // instead of retyping it per equipment type. Every row stays independently
+  // editable afterwards — this only seeds the fields, it doesn't link them.
+  const manualVerificationCount = equipment.filter((row) => row.manual_verification).length;
+  const handleApplySellerToAll = (sourceIndex) => {
+    const source = equipment[sourceIndex];
+    onChange(equipment.map((row, i) => (
+      i !== sourceIndex && row.manual_verification
+        ? { ...row, seller_name: source.seller_name, seller_phone: source.seller_phone, comment: source.comment }
+        : row
+    )));
   };
 
   return (
@@ -253,6 +335,18 @@ const EquipmentSection = ({ fuelType, onFuelTypeChange, equipment, onChange, err
           fuelType={fuelType}
           onChange={(updatedRow) => handleRowChange(index, updatedRow)}
           error={errors[row.equipment_type]}
+          canApplySellerToAll={manualVerificationCount > 1}
+          onApplySellerToAll={() => handleApplySellerToAll(index)}
+          suggestedSeller={
+            row.manual_verification &&
+            !row.seller_name && !row.seller_phone && !row.comment &&
+            lastUsedSeller &&
+            !dismissedSuggestions[row.equipment_type]
+              ? lastUsedSeller
+              : null
+          }
+          onUseSuggestedSeller={() => handleUseSuggestedSeller(index)}
+          onDismissSuggestion={() => handleDismissSuggestion(index)}
         />
       ))}
     </div>

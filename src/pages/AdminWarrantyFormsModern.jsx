@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Car, FileSearch, RefreshCw, Download, X } from 'lucide-react';
+import { Search, Car, FileSearch, Download, X } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { warrantyAPI, exportCsvAPI } from '../services/api';
 import { downloadBlob, buildCsvFilename } from '../utils/download';
@@ -21,8 +21,6 @@ import WarrantyDetailModal from '../components/Warranty/WarrantyDetailModal';
 import RejectReasonModal from '../components/RegistrationRequests/RejectReasonModal';
 import WarrantyFormFields, { validateWarrantyForm } from '../components/WarrantyFormFields';
 import { toEditableEquipment } from '../config/equipmentCategories';
-import { getErrorMessage } from '../config/errorCodes';
-import { extractSyncErrorCode } from '../utils/syncErrorCode';
 
 // MySQL DATE/DATETIME → YYYY-MM-DD for <input type="date">
 const toInputDate = (val) => {
@@ -58,7 +56,6 @@ const AdminWarrantyFormsModern = () => {
   const [selectedForm, setSelectedForm] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [retrySyncConfirm, setRetrySyncConfirm] = useState(null);
   const [approveVerificationConfirm, setApproveVerificationConfirm] = useState(null);
   const [rejectVerificationTarget, setRejectVerificationTarget] = useState(null);
   const [verificationActionSubmitting, setVerificationActionSubmitting] = useState(false);
@@ -68,7 +65,10 @@ const AdminWarrantyFormsModern = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const response = await exportCsvAPI.warranty(employeeId);
+      const response = await exportCsvAPI.warranty(
+        employeeId, search,
+        verificationFilter !== 'all' ? verificationFilter : undefined
+      );
       downloadBlob(response.data, buildCsvFilename('warranty'));
     } catch (err) {
       setToast({ type: 'error', message: err.message });
@@ -140,18 +140,6 @@ const AdminWarrantyFormsModern = () => {
       await warrantyAPI.deleteForm(deleteConfirm);
       setToast({ type: 'success', message: t('formDeleted') });
       setDeleteConfirm(null);
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setToast({ type: 'error', message: err.message });
-    }
-  };
-
-  const handleRetrySync = async () => {
-    if (!retrySyncConfirm) return;
-    try {
-      await warrantyAPI.retrySync(retrySyncConfirm);
-      setToast({ type: 'success', message: t('retrySyncSuccess') });
-      setRetrySyncConfirm(null);
       setRefreshKey((k) => k + 1);
     } catch (err) {
       setToast({ type: 'error', message: err.message });
@@ -292,22 +280,6 @@ const AdminWarrantyFormsModern = () => {
       render: (f) => new Date(f.created_at).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'uz-UZ', { year: 'numeric', month: 'short', day: 'numeric' }),
     },
     {
-      key: 'syncStatus',
-      header: t('syncStatus'),
-      render: (f) => {
-        const code = extractSyncErrorCode(f.easygas_last_error);
-        const reason = f.easygas_sync_status === 'FAILED' && code ? getErrorMessage(code, null, language) : null;
-        return (
-          <div className="max-w-[200px]">
-            <StatusBadge status={`SYNC_${f.easygas_sync_status}`} />
-            {reason && (
-              <p className="text-xs text-neutral-500 mt-1 truncate" title={f.easygas_last_error}>{reason}</p>
-            )}
-          </div>
-        );
-      },
-    },
-    {
       key: 'verification',
       header: t('verificationStatusColumn'),
       // Manual Verification workflow — `equipment` already comes back on
@@ -328,11 +300,6 @@ const AdminWarrantyFormsModern = () => {
     <>
       <Button size="sm" variant="outline" onClick={() => handleViewDetail(form.id)}>{t('view')}</Button>
       <Button size="sm" variant="secondary" onClick={() => handleEditOpen(form)}>{t('editWarranty')}</Button>
-      {form.easygas_sync_status === 'FAILED' && (
-        <Button size="sm" variant="outline" icon={RefreshCw} onClick={() => setRetrySyncConfirm(form.id)}>
-          {t('retrySync')}
-        </Button>
-      )}
       <Button size="sm" variant="danger" onClick={() => setDeleteConfirm(form.id)}>{t('delete')}</Button>
     </>
   );
@@ -521,16 +488,6 @@ const AdminWarrantyFormsModern = () => {
         message={t('deleteFormMessage')}
         confirmText={t('delete')}
         isDangerous
-      />
-
-      {/* ── Retry sync confirmation ──────────────────────────────────────────── */}
-      <ConfirmModal
-        isOpen={!!retrySyncConfirm}
-        onClose={() => setRetrySyncConfirm(null)}
-        onConfirm={handleRetrySync}
-        title={t('retrySyncConfirmTitle')}
-        message={t('retrySyncConfirmMessage')}
-        confirmText={t('retrySync')}
       />
 
       {/* ── Manual Verification workflow — approve/reject ────────────────────── */}

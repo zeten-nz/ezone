@@ -136,10 +136,6 @@ const AdminReportsModern = () => {
     { key: 'installed', header: t('installedStockLabel'), render: (r) => r.installed },
   ];
 
-  const successPct = dashboardTotals?.warrantySuccessRate != null
-    ? `${(dashboardTotals.warrantySuccessRate * 100).toFixed(1)}%`
-    : '—';
-
   if (loading) {
     return (
       <ModernAdminLayout>
@@ -200,8 +196,7 @@ const AdminReportsModern = () => {
             <StatTile index={7} label={t('importedTodayLabel')} value={dashboardTotals.importedToday} icon={Clock} />
             <StatTile index={8} label={t('importedThisMonthLabel')} value={dashboardTotals.importedThisMonth} icon={Clock} />
             <StatTile index={9} label={t('warrantyCount')} value={dashboardTotals.warrantyCount} icon={Award} />
-            <StatTile index={10} label={t('warrantySuccessRateLabel')} value={successPct} icon={TrendingUp} />
-            <StatTile index={11} label={t('topBranch')} value={topBranch?.branch_name || '—'} icon={Building2} />
+            <StatTile index={10} label={t('topBranch')} value={topBranch?.branch_name || '—'} icon={Building2} />
           </div>
         )}
 

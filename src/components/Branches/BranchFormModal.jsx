@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../UI/Input';
 import Select from '../UI/Select';
 import Button from '../UI/Button';
-import EasyGasStagCodeField from './EasyGasStagCodeField';
 import { useLanguage } from '../../context/LanguageContext';
 import { buildCreateBranchSchema, buildEditBranchSchema } from '../../validation/branchSchemas';
 import { regions } from '../../regions';
@@ -39,7 +38,6 @@ const BranchFormModal = ({ editingBranch, onSubmit, onCancel }) => {
       region: editingBranch?.region ?? '',
       district: editingBranch?.district ?? '',
       city: editingBranch?.city ?? '',
-      easygas_stag_code: editingBranch?.easygas_stag_code ?? '',
     },
   });
 
@@ -125,18 +123,6 @@ const BranchFormModal = ({ editingBranch, onSubmit, onCancel }) => {
         label={t('city')}
         error={errors.city?.message}
         {...register('city')}
-      />
-
-      <Controller
-        name="easygas_stag_code"
-        control={control}
-        render={({ field }) => (
-          <EasyGasStagCodeField
-            value={field.value}
-            onChange={field.onChange}
-            error={errors.easygas_stag_code?.message}
-          />
-        )}
       />
 
       <div className="flex gap-3 justify-end pt-4">

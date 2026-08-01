@@ -6,7 +6,7 @@ import { z } from 'zod';
 // identity field that only applies at creation.
 export const buildProductSchema = (t) => z.object({
   category: z.string().min(1, t('valCategoryRequired')),
-  brand: z.string().trim().min(1, t('valBrandRequired')),
+  brand_id: z.coerce.number({ invalid_type_error: t('valBrandRequired') }).int().positive(t('valBrandRequired')),
   model: z.string().optional(),
   fuel_type: z.string().optional(),
 });

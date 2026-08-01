@@ -33,11 +33,12 @@ import { EMPTY_EQUIPMENT_ROWS, getEquipmentTypeLabel } from '../config/equipment
 // set only when the installer picks a match from the synced car catalog
 // autocomplete (see components/Warranty/VehicleNameField.jsx) — null means
 // free text, which always remains a valid submission on its own.
-// warranty_book_number is no longer typed by the installer either — EasyGas
-// generates the official number and it lands here once sync succeeds (see
-// the EasyGas integration plan); kept as a key for structural symmetry with
-// the edit flow (which loads an existing warranty's value), always shown
-// read-only, never as an editable input — see Section 1 below.
+// warranty_book_number is no longer typed by the installer either — the
+// server assigns the next sequential local number (see
+// warrantyRepository.js's getNextWarrantyNumber) at creation time; kept as a
+// key for structural symmetry with the edit flow (which loads an existing
+// warranty's value), always shown read-only, never as an editable input —
+// see Section 1 below.
 export const EMPTY_WARRANTY_FORM = {
   warranty_book_number: '',
   installation_date: '',
@@ -56,7 +57,7 @@ export const EMPTY_WARRANTY_FORM = {
 // EMPTY_WARRANTY_FORM is a shared, module-level template — spreading it
 // alone would mean every fresh form instance carries no submission_uuid (or
 // worse, silently shares one generated once at module-load time across every
-// warranty in the session). This is EasyGas's idempotency key for a
+// warranty in the session). This is the local create-idempotency key for a
 // warranty's whole lifecycle, so it must be minted fresh, once, per NEW
 // warranty — every reset site (initial mount, "Clear", and the post-submit
 // success reset) must use this helper instead of spreading
@@ -81,9 +82,8 @@ const SECTION_FIELDS = {
 
 // ── Shared client-side validator ───────────────────────────────────────────────
 // Range checks below mirror ezone-server/routes/warrantyRoutes.js's
-// validators exactly (which in turn mirror EasyGas's documented integration
-// limits) — failing fast here avoids a round trip just to get the same
-// rejection back from the server.
+// validators exactly — failing fast here avoids a round trip just to get the
+// same rejection back from the server.
 const MIN_PRODUCTION_YEAR = 1950;
 const MAX_MILEAGE = 4294967295;
 const MIN_INSTALLATION_DATE = new Date('2015-01-01');
@@ -241,7 +241,7 @@ const WarrantyFormFields = ({
         </Card>
       )}
 
-      {/* Section 1 — Warranty number (read-only, EasyGas-assigned) + installation date */}
+      {/* Section 1 — Warranty number (read-only, server-assigned) + installation date */}
       <SectionCard title={t('sectionWarranty')} icon={FileText} complete={isSectionComplete(formData, 'warranty')} completeLabel={t('sectionComplete')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {formData.warranty_book_number ? (
