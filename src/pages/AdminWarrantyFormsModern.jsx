@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Car, FileSearch, Download, X } from 'lucide-react';
+import { Search, Car, FileSearch, Download, X, Check } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { warrantyAPI, exportCsvAPI } from '../services/api';
 import { downloadBlob, buildCsvFilename } from '../utils/download';
@@ -59,6 +59,11 @@ const AdminWarrantyFormsModern = () => {
   const [approveVerificationConfirm, setApproveVerificationConfirm] = useState(null);
   const [rejectVerificationTarget, setRejectVerificationTarget] = useState(null);
   const [verificationActionSubmitting, setVerificationActionSubmitting] = useState(false);
+  // Warranty status workflow — separate state from the Manual Verification
+  // state above (a different review action, on the warranty form itself).
+  const [approveFormConfirm, setApproveFormConfirm] = useState(null);
+  const [rejectFormTarget, setRejectFormTarget] = useState(null);
+  const [formActionSubmitting, setFormActionSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
   const [exporting, setExporting] = useState(false);
 
@@ -192,6 +197,41 @@ const AdminWarrantyFormsModern = () => {
     }
   };
 
+  // ── Warranty status workflow ─────────────────────────────────────────────
+  // Approving can take a few seconds longer than an ordinary request — the
+  // server attempts an EasyGas sync before responding (see
+  // warranty.service.js's comment) — the button's loading state already
+  // covers this, no separate handling needed here.
+  const handleApproveForm = async () => {
+    if (!approveFormConfirm) return;
+    setFormActionSubmitting(true);
+    try {
+      await warrantyAPI.approveForm(approveFormConfirm);
+      setToast({ type: 'success', message: t('warrantyApproved') });
+      setApproveFormConfirm(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setFormActionSubmitting(false);
+    }
+  };
+
+  const handleRejectForm = async (notes) => {
+    if (!rejectFormTarget) return;
+    setFormActionSubmitting(true);
+    try {
+      await warrantyAPI.rejectForm(rejectFormTarget, notes);
+      setToast({ type: 'success', message: t('warrantyRejected') });
+      setRejectFormTarget(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setFormActionSubmitting(false);
+    }
+  };
+
   // ── Edit handlers ────────────────────────────────────────────────────────────
   const handleEditOpen = (form) => {
     setEditFormId(form.id);
@@ -280,6 +320,17 @@ const AdminWarrantyFormsModern = () => {
       render: (f) => new Date(f.created_at).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'uz-UZ', { year: 'numeric', month: 'short', day: 'numeric' }),
     },
     {
+      key: 'warrantyStatus',
+      header: t('warrantyStatusColumn'),
+      // The warranty form's own lifecycle — a completely different concept
+      // from the Manual Verification column below (kept separate, both
+      // still shown, per design). Always shows a badge (never a dash):
+      // unlike Manual Verification, PENDING here is the ordinary starting
+      // state for every warranty, not a rare edge case, so it's worth
+      // always surfacing rather than hiding by default.
+      render: (f) => <StatusBadge status={`WARRANTY_${f.status}`} />,
+    },
+    {
       key: 'verification',
       header: t('verificationStatusColumn'),
       // Manual Verification workflow — `equipment` already comes back on
@@ -299,6 +350,17 @@ const AdminWarrantyFormsModern = () => {
   const renderActions = (form) => (
     <>
       <Button size="sm" variant="outline" onClick={() => handleViewDetail(form.id)}>{t('view')}</Button>
+      {form.status === 'PENDING' && (
+        <>
+          {/* Icon-only, not text — 5 full-text action buttons (View/Approve/
+              Reject/Edit/Delete) overflowed the Actions column at normal
+              desktop widths, pushing Edit/Delete off-screen. title=
+              gives the same tooltip pattern this file already uses for
+              the disabled Edit button below. */}
+          <Button size="sm" variant="success" icon={Check} title={t('approve')} aria-label={t('approve')} onClick={() => setApproveFormConfirm(form.id)} />
+          <Button size="sm" variant="danger" icon={X} title={t('reject')} aria-label={t('reject')} onClick={() => setRejectFormTarget(form.id)} />
+        </>
+      )}
       <Button size="sm" variant="secondary" onClick={() => handleEditOpen(form)}>{t('editWarranty')}</Button>
       <Button size="sm" variant="danger" onClick={() => setDeleteConfirm(form.id)}>{t('delete')}</Button>
     </>
@@ -508,6 +570,27 @@ const AdminWarrantyFormsModern = () => {
           submitting={verificationActionSubmitting}
           title={t('rejectVerificationTitle')}
           message={t('rejectVerificationMessage')}
+        />
+      )}
+
+      {/* ── Warranty status workflow — approve/reject ─────────────────────────── */}
+      <ConfirmModal
+        isOpen={!!approveFormConfirm}
+        onClose={() => setApproveFormConfirm(null)}
+        onConfirm={handleApproveForm}
+        title={t('approveWarrantyTitle')}
+        message={t('approveWarrantyMessage')}
+        confirmText={t('approve')}
+      />
+
+      {rejectFormTarget && (
+        <RejectReasonModal
+          isOpen={!!rejectFormTarget}
+          onClose={() => setRejectFormTarget(null)}
+          onConfirm={handleRejectForm}
+          submitting={formActionSubmitting}
+          title={t('rejectWarrantyTitle')}
+          message={t('rejectWarrantyMessage')}
         />
       )}
     </ModernAdminLayout>

@@ -42,6 +42,7 @@ const AdminBranchesModern           = lazy(() => import('./pages/AdminBranchesMo
 const AdminBrandsModern             = lazy(() => import('./pages/AdminBrandsModern'));
 const AdminCarsModern               = lazy(() => import('./pages/AdminCarsModern'));
 const AdminProductsModern           = lazy(() => import('./pages/AdminProductsModern'));
+const AdminCatalogSyncModern        = lazy(() => import('./pages/AdminCatalogSyncModern'));
 const AdminInventoryModern          = lazy(() => import('./pages/AdminInventoryModern'));
 const AdminReportsModern            = lazy(() => import('./pages/AdminReportsModern'));
 const AdminPointsConfigModern       = lazy(() => import('./pages/AdminPointsConfigModern'));
@@ -214,6 +215,14 @@ function App() {
                       element={
                         <ErrorBoundary name="ProductsBoundary" inline>
                           <AdminProductsModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/catalog-sync"
+                      element={
+                        <ErrorBoundary name="CatalogSyncBoundary" inline>
+                          <AdminCatalogSyncModern />
                         </ErrorBoundary>
                       }
                     />

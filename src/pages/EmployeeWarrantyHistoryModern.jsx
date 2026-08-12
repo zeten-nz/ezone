@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Car, History, Clock } from 'lucide-react';
+import { Search, Car, History, Clock, ExternalLink } from 'lucide-react';
 import ModernEmployeeLayout from '../components/ModernEmployeeLayout';
 import { warrantyAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -14,6 +14,7 @@ import { SkeletonTable } from '../components/UI/Skeleton';
 import ErrorState from '../components/UI/ErrorState';
 import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
+import StatusBadge from '../components/UI/StatusBadge';
 import WarrantyDetailModal from '../components/Warranty/WarrantyDetailModal';
 import WarrantyFormFields, { validateWarrantyForm } from '../components/WarrantyFormFields';
 import { toEditableEquipment } from '../config/equipmentCategories';
@@ -172,6 +173,11 @@ const EmployeeWarrantyHistoryModern = () => {
     },
     { key: 'owner', header: t('ownerName'), render: (f) => f.owner_full_name },
     {
+      key: 'warrantyStatus',
+      header: t('warrantyStatusColumn'),
+      render: (f) => <StatusBadge status={`WARRANTY_${f.status}`} />,
+    },
+    {
       key: 'installDate',
       header: t('installationDate'),
       render: (f) => (f.installation_date ? new Date(f.installation_date).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'uz-UZ', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'),
@@ -206,6 +212,20 @@ const EmployeeWarrantyHistoryModern = () => {
         >
           {t('editWarranty')}
         </Button>
+        {form.easygas_claim_url && (
+          // Short visible label + full phrase as a tooltip (title) — the
+          // full "View EasyGas Warranty" text was wide enough to push this
+          // button off-screen next to View/Edit at normal desktop widths.
+          <Button
+            size="sm"
+            variant="success"
+            icon={ExternalLink}
+            title={t('viewEasyGasWarranty')}
+            onClick={() => window.open(form.easygas_claim_url, '_blank', 'noopener,noreferrer')}
+          >
+            {t('viewEasyGasWarrantyShort')}
+          </Button>
+        )}
       </>
     );
   };
@@ -229,7 +249,8 @@ const EmployeeWarrantyHistoryModern = () => {
           )}
         </div>
         <p className="text-xs text-neutral-500">{form.owner_full_name}</p>
-        <div className="flex gap-2 pt-1">{renderActions(form)}</div>
+        <StatusBadge status={`WARRANTY_${form.status}`} />
+        <div className="flex gap-2 pt-1 flex-wrap">{renderActions(form)}</div>
       </div>
     );
   };

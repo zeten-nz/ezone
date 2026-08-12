@@ -25,6 +25,7 @@ import { carsService }                 from './cars.service';
 import { inventoryService }            from './inventory.service';
 import { pointsService }               from './points.service';
 import { exportCsvService }            from './exportCsv.service';
+import { catalogSyncService }          from './catalogSync.service';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
@@ -59,6 +60,8 @@ export const warrantyAPI = {
   searchForms:   (search, filterType)       => warrantyService.search(search, filterType),
   approveVerification:    (equipmentId, notes) => warrantyService.approveVerification(equipmentId, notes),
   rejectVerification:     (equipmentId, notes) => warrantyService.rejectVerification(equipmentId, notes),
+  approveForm:            (formId, notes)       => warrantyService.approveForm(formId, notes),
+  rejectForm:             (formId, notes)       => warrantyService.rejectForm(formId, notes),
   uploadEquipmentPhoto:   (photo)              => warrantyService.uploadEquipmentPhoto(photo),
   getEquipmentPhotoBlob:  (equipmentId)        => warrantyService.getEquipmentPhotoBlob(equipmentId),
 };
@@ -94,7 +97,11 @@ export const branchAPI = {
   enable:    (branchId)            => branchesService.enable(branchId),
 };
 
-// ── Brands (admin CRUD; active list usable by any authenticated role) ───────
+// ── Brands (EasyGas-synced catalog; admin UI is read-only, but create/update/
+// activate/deactivate/delete stay wired end-to-end — see
+// ezone-server/middleware/catalogReadOnlyGuard.js, which 403s them
+// server-side. Kept here, unused by any current page, so a future
+// architecture change doesn't need to rebuild this client-side wiring.) ────
 export const brandAPI = {
   getAll:     (page, limit, search)  => brandsService.getAll(page, limit, search),
   getActive:  ()                     => brandsService.getActive(),
@@ -105,7 +112,8 @@ export const brandAPI = {
   delete:     (brandId)              => brandsService.delete(brandId),
 };
 
-// ── Products (admin CRUD; search/brands usable by any authenticated role) ───
+// ── Products (EasyGas-synced catalog; admin UI is read-only — same
+// unused-but-wired reasoning as brandAPI above.) ─────────────────────────────
 export const productAPI = {
   getAll:     (page, limit, search, category)          => productsService.getAll(page, limit, search, category),
   search:     (query, equipmentType, brand, fuelType)  => productsService.search(query, equipmentType, brand, fuelType),
@@ -115,6 +123,14 @@ export const productAPI = {
   activate:   (productId)                               => productsService.activate(productId),
   deactivate: (productId)                               => productsService.deactivate(productId),
   delete:     (productId)                               => productsService.delete(productId),
+};
+
+// ── Catalog sync (admin) ─────────────────────────────────────────────────────
+// Triggers/reads the ONE brands+products+cars EasyGas sync job — see
+// ezone-server/services/easyGasCatalogSyncService.js's runFullSync.
+export const catalogSyncAPI = {
+  run:       () => catalogSyncService.run(),
+  getStatus: () => catalogSyncService.getStatus(),
 };
 
 // ── Reports (admin) ──────────────────────────────────────────────────────────
@@ -135,7 +151,8 @@ export const reportsAPI = {
   getWarehouseStatistics:     (branchId)             => reportsService.getWarehouseStatistics(branchId),
 };
 
-// ── Vehicle catalog (admin CRUD; search usable by any authenticated role) ───
+// ── Vehicle catalog (EasyGas-synced catalog; admin UI is read-only — same
+// unused-but-wired reasoning as brandAPI above.) ─────────────────────────────
 export const carAPI = {
   search:     (query)                => carsService.search(query),
   getAll:     (page, limit, search)  => carsService.getAll(page, limit, search),

@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Users, FilePlus2, History, UserCog, ClipboardList, Building2, Package, Boxes, BarChart3, Coins, Award, Warehouse, TrendingUp, Tag, Car } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, FilePlus2, History, UserCog, ClipboardList, Building2, Package, Boxes, BarChart3, Coins, Award, Warehouse, TrendingUp, Tag, Car, RefreshCw } from 'lucide-react';
 import { USER_ROLES } from './constants';
 
 /**
@@ -15,6 +15,7 @@ export const ADMIN_NAV_ITEMS = [
   { labelKey: 'brands', path: '/brands', icon: Tag },
   { labelKey: 'cars', path: '/cars', icon: Car },
   { labelKey: 'products', path: '/products', icon: Package },
+  { labelKey: 'catalogSync', path: '/catalog-sync', icon: RefreshCw },
   { labelKey: 'inventory', path: '/inventory', icon: Boxes },
   { labelKey: 'installerPoints', path: '/installer-points', icon: Award },
   { labelKey: 'pointsConfig', path: '/points-config', icon: Coins },

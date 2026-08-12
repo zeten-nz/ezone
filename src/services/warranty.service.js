@@ -79,6 +79,18 @@ export const warrantyService = {
   rejectVerification: (equipmentId, notes) =>
     client.post(`/warranty/equipment/${equipmentId}/reject-verification`, { notes }),
 
+  // ── Warranty status workflow (admin review of the form itself) ──────────
+  // Separate from approveVerification/rejectVerification above (Manual
+  // Verification reviews one equipment row's barcode identity; this
+  // reviews the warranty form's own lifecycle). Approving triggers an
+  // EasyGas sync attempt server-side before responding, so this call can
+  // take a few seconds longer than an ordinary request — expected, not a bug.
+  approveForm: (formId, notes) =>
+    client.post(`/warranty/${formId}/approve`, { notes }),
+
+  rejectForm: (formId, notes) =>
+    client.post(`/warranty/${formId}/reject`, { notes }),
+
   // Pre-upload for a Manual Verification equipment photo — returns
   // { filename }, which the caller then attaches to that equipment row's
   // manual_verification_photo_filename before submitting the warranty form

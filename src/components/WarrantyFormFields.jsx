@@ -22,6 +22,7 @@ import EquipmentSection from './Warranty/EquipmentSection';
 import VehicleNameField from './Warranty/VehicleNameField';
 import VehicleScannerModal from './VehicleScanner/VehicleScannerModal';
 import { EMPTY_EQUIPMENT_ROWS, getEquipmentTypeLabel } from '../config/equipmentCategories';
+import { PHONE_REGEX } from '../config/phone';
 
 // ── Blank template used for the create form initial state ──────────────────────
 // Installer/organization fields are gone — a real ERP doesn't re-ask for data
@@ -98,6 +99,13 @@ export const validateWarrantyForm = (formData, t) => {
   // One fuel type for the whole installation — required alongside, not
   // nested inside, the per-row equipment errors below.
   if (!formData.fuel_type) errors.fuel_type = t('fieldRequired');
+
+  // +998XXXXXXXXX exactly — mirrors warrantyRoutes' owner_phone rule (added
+  // because EasyGas rejects other shapes; the value is forwarded verbatim in
+  // the warranty payload on approval).
+  if (formData.owner_phone && !errors.owner_phone && !PHONE_REGEX.test(formData.owner_phone)) {
+    errors.owner_phone = t('valPhoneInvalid');
+  }
 
   if (formData.vehicle_production_year && !errors.vehicle_production_year) {
     const year = Number(formData.vehicle_production_year);

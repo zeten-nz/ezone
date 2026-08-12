@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Pencil, Trash2, Tag, Ban, CheckCircle } from 'lucide-react';
+import { Search, Tag } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { brandAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
-import Toast from '../components/UI/Toast';
-import { Modal, ConfirmModal } from '../components/UI/Modal';
 import StatusBadge from '../components/UI/StatusBadge';
 import EmptyState from '../components/UI/EmptyState';
 import { SkeletonTable } from '../components/UI/Skeleton';
 import ErrorState from '../components/UI/ErrorState';
 import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
-import BrandFormModal from '../components/Brands/BrandFormModal';
+import CatalogReadOnlyNotice from '../components/Catalog/CatalogReadOnlyNotice';
 
 const PAGE_SIZE = 20;
 
@@ -30,12 +28,6 @@ const AdminBrandsModern = () => {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editingBrand, setEditingBrand] = useState(null);
-  const [activeConfirm, setActiveConfirm] = useState(null); // { id, action: 'activate'|'deactivate' }
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     setError(null);
@@ -69,62 +61,6 @@ const AdminBrandsModern = () => {
 
   const hasActiveFilters = search !== '';
 
-  const handleOpenCreate = () => {
-    setEditingBrand(null);
-    setShowModal(true);
-  };
-
-  const handleOpenEdit = (brand) => {
-    setEditingBrand(brand);
-    setShowModal(true);
-  };
-
-  const handleSave = async (data) => {
-    try {
-      if (editingBrand) {
-        await brandAPI.update(editingBrand.id, data);
-        setToast({ type: 'success', message: t('brandUpdated') });
-      } else {
-        await brandAPI.create(data);
-        setToast({ type: 'success', message: t('brandCreated') });
-      }
-      setShowModal(false);
-      setEditingBrand(null);
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setToast({ type: 'error', message: err.message });
-    }
-  };
-
-  const handleToggleActive = async () => {
-    if (!activeConfirm) return;
-    try {
-      if (activeConfirm.action === 'activate') {
-        await brandAPI.activate(activeConfirm.id);
-        setToast({ type: 'success', message: t('brandActivatedToast') });
-      } else {
-        await brandAPI.deactivate(activeConfirm.id);
-        setToast({ type: 'success', message: t('brandDeactivatedToast') });
-      }
-      setActiveConfirm(null);
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setToast({ type: 'error', message: err.message });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteConfirm) return;
-    try {
-      await brandAPI.delete(deleteConfirm);
-      setToast({ type: 'success', message: t('brandDeleted') });
-      setDeleteConfirm(null);
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setToast({ type: 'error', message: err.message });
-    }
-  };
-
   const columns = [
     {
       key: 'brand',
@@ -141,18 +77,6 @@ const AdminBrandsModern = () => {
     { key: 'status', header: t('status'), render: (b) => <StatusBadge status={b.is_active ? 'ACTIVE' : 'DISABLED'} /> },
   ];
 
-  const renderActions = (b) => (
-    <>
-      <Button size="sm" variant="outline" icon={Pencil} onClick={() => handleOpenEdit(b)}>{t('editUser')}</Button>
-      {b.is_active ? (
-        <Button size="sm" variant="secondary" icon={Ban} onClick={() => setActiveConfirm({ id: b.id, action: 'deactivate' })}>{t('deactivateAction')}</Button>
-      ) : (
-        <Button size="sm" variant="secondary" icon={CheckCircle} onClick={() => setActiveConfirm({ id: b.id, action: 'activate' })}>{t('activateAction')}</Button>
-      )}
-      <Button size="sm" variant="danger" icon={Trash2} onClick={() => setDeleteConfirm(b.id)}>{t('delete')}</Button>
-    </>
-  );
-
   const renderMobileCard = (b) => (
     <div className="border border-neutral-200 rounded-lg p-4 space-y-3">
       <div className="flex items-start gap-3">
@@ -167,7 +91,6 @@ const AdminBrandsModern = () => {
           <StatusBadge status={b.is_active ? 'ACTIVE' : 'DISABLED'} />
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 pt-1">{renderActions(b)}</div>
     </div>
   );
 
@@ -195,18 +118,13 @@ const AdminBrandsModern = () => {
 
   return (
     <ModernAdminLayout>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('brands')}</h1>
-            <p className="text-neutral-500 mt-1.5">{t('brandsSubtitle')}</p>
-          </div>
-          <Button onClick={handleOpenCreate} icon={Plus}>
-            {t('createBrand')}
-          </Button>
+        <div>
+          <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('brands')}</h1>
+          <p className="text-neutral-500 mt-1.5">{t('brandsSubtitle')}</p>
         </div>
+
+        <CatalogReadOnlyNotice />
 
         <Card>
           <CardContent className="p-4">
@@ -232,10 +150,10 @@ const AdminBrandsModern = () => {
             {brands.length === 0 ? (
               <EmptyState
                 title={hasActiveFilters ? t('noBrandsMatch') : t('noBrandsYet')}
-                description={hasActiveFilters ? t('noBrandsMatchDesc') : t('noBrandsYetDesc')}
+                description={hasActiveFilters ? t('noBrandsMatchDesc') : t('noBrandsYetSyncDesc')}
                 icon={Tag}
-                action={hasActiveFilters ? handleClearFilters : handleOpenCreate}
-                actionText={hasActiveFilters ? t('clear') : t('createBrand')}
+                action={hasActiveFilters ? handleClearFilters : undefined}
+                actionText={hasActiveFilters ? t('clear') : undefined}
               />
             ) : (
               <div className="space-y-4">
@@ -243,9 +161,7 @@ const AdminBrandsModern = () => {
                   columns={columns}
                   rows={brands}
                   rowKey={(b) => b.id}
-                  renderActions={renderActions}
                   renderMobileCard={renderMobileCard}
-                  actionsHeader={t('actions')}
                 />
                 <Pagination
                   currentPage={currentPage}
@@ -262,41 +178,6 @@ const AdminBrandsModern = () => {
           </CardContent>
         </Card>
       </div>
-
-      <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title={editingBrand ? t('editBrand') : t('createBrand')}
-        size="md"
-      >
-        {showModal && (
-          <BrandFormModal
-            editingBrand={editingBrand}
-            onSubmit={handleSave}
-            onCancel={() => setShowModal(false)}
-          />
-        )}
-      </Modal>
-
-      <ConfirmModal
-        isOpen={!!activeConfirm}
-        onClose={() => setActiveConfirm(null)}
-        onConfirm={handleToggleActive}
-        title={activeConfirm?.action === 'activate' ? t('activateBrandTitle') : t('deactivateBrandTitle')}
-        message={activeConfirm?.action === 'activate' ? t('activateBrandMessage') : t('deactivateBrandMessage')}
-        confirmText={activeConfirm?.action === 'activate' ? t('activateAction') : t('deactivateAction')}
-        isDangerous={activeConfirm?.action === 'deactivate'}
-      />
-
-      <ConfirmModal
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={handleDelete}
-        title={t('deleteBrandTitle')}
-        message={t('deleteBrandMessage')}
-        confirmText={t('delete')}
-        isDangerous
-      />
     </ModernAdminLayout>
   );
 };

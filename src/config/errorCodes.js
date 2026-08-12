@@ -65,6 +65,11 @@ const ERROR_CODE_MESSAGES = {
   ITEM_INSTALLED: { uz: "O'rnatilgan elementning shtrix-kodini tuzatib bo'lmaydi — avval uni bo'shating.", ru: 'Нельзя исправить штрих-код установленного товара — сначала освободите его.' },
   BARCODE_ALREADY_EXISTS: { uz: 'Bu shtrix-kod boshqa elementda allaqachon ishlatilmoqda.', ru: 'Этот штрих-код уже используется другим товаром.' },
   MERGE_PRODUCT_MISMATCH: { uz: "Turli mahsulotlarga tegishli elementlarni birlashtirib bo'lmaydi.", ru: 'Нельзя объединить товары, относящиеся к разным продуктам.' },
+
+  // Catalog sync (see ezone-server/middleware/catalogReadOnlyGuard.js and
+  // controllers/catalogSyncController.js's runCatalogSync)
+  CATALOG_READ_ONLY: { uz: 'Katalog EasyGas sinxronizatsiyasi orqali boshqariladi.', ru: 'Каталог управляется через синхронизацию EasyGas.' },
+  SYNC_ALREADY_RUNNING: { uz: 'Sinxronlash allaqachon ishlamoqda.', ru: 'Синхронизация уже выполняется.' },
 };
 
 // Fallback when the backend responds without an errorCode at all (e.g. a

@@ -37,4 +37,17 @@ export const STATUS_BADGE = {
   VERIFICATION_PENDING:  { variant: 'warning', labelKey: 'verificationStatusPending' },
   VERIFICATION_APPROVED: { variant: 'success', labelKey: 'verificationStatusApproved' },
   VERIFICATION_REJECTED: { variant: 'danger',  labelKey: 'verificationStatusRejected' },
+  // Warranty status workflow (warranty_forms.status) — the warranty form's
+  // own lifecycle, a completely different concept from VERIFICATION_* above
+  // (which is Manual Verification, a per-equipment-row barcode concern).
+  // Own "WARRANTY_" prefix so the two can never visually or semantically
+  // be confused with each other.
+  WARRANTY_PENDING:    { variant: 'warning', labelKey: 'warrantyStatusPending' },
+  WARRANTY_SUCCESSFUL: { variant: 'success', labelKey: 'warrantyStatusSuccessful' },
+  WARRANTY_REJECTED:   { variant: 'danger',  labelKey: 'warrantyStatusRejected' },
+  // EasyGas catalog sync outcome (sync_state.last_status) — powers the
+  // single shared "Sync EasyGas Catalog" panel (AdminCatalogSyncModern).
+  CATALOG_SYNC_SUCCESS: { variant: 'success', labelKey: 'syncStatusSuccess' },
+  CATALOG_SYNC_FAILED:  { variant: 'danger',  labelKey: 'syncStatusFailed' },
+  CATALOG_SYNC_RUNNING: { variant: 'warning', labelKey: 'syncStatusRunning' },
 };

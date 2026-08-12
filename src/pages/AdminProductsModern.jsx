@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Pencil, Trash2, Package, Ban, CheckCircle } from 'lucide-react';
+import { Search, Package } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { productAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -7,15 +7,13 @@ import { Card, CardContent, CardHeader } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Select from '../components/UI/Select';
-import Toast from '../components/UI/Toast';
-import { Modal, ConfirmModal } from '../components/UI/Modal';
 import StatusBadge from '../components/UI/StatusBadge';
 import EmptyState from '../components/UI/EmptyState';
 import { SkeletonTable } from '../components/UI/Skeleton';
 import ErrorState from '../components/UI/ErrorState';
 import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
-import ProductFormModal from '../components/Products/ProductFormModal';
+import CatalogReadOnlyNotice from '../components/Catalog/CatalogReadOnlyNotice';
 import { getProductCategoryLabel, getProductCategoryOptions } from '../config/productCategories';
 
 const PAGE_SIZE = 20;
@@ -33,12 +31,6 @@ const AdminProductsModern = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [activeConfirm, setActiveConfirm] = useState(null); // { id, action: 'activate'|'deactivate' }
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [toast, setToast] = useState(null);
 
   const categoryOptions = useMemo(
     () => [{ value: '', label: t('allCategories') }, ...getProductCategoryOptions(t)],
@@ -83,62 +75,6 @@ const AdminProductsModern = () => {
 
   const hasActiveFilters = search !== '' || categoryFilter !== '';
 
-  const handleOpenCreate = () => {
-    setEditingProduct(null);
-    setShowModal(true);
-  };
-
-  const handleOpenEdit = (product) => {
-    setEditingProduct(product);
-    setShowModal(true);
-  };
-
-  const handleSave = async (data) => {
-    try {
-      if (editingProduct) {
-        await productAPI.update(editingProduct.id, data);
-        setToast({ type: 'success', message: t('productUpdated') });
-      } else {
-        await productAPI.create(data);
-        setToast({ type: 'success', message: t('productCreated') });
-      }
-      setShowModal(false);
-      setEditingProduct(null);
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setToast({ type: 'error', message: err.message });
-    }
-  };
-
-  const handleToggleActive = async () => {
-    if (!activeConfirm) return;
-    try {
-      if (activeConfirm.action === 'activate') {
-        await productAPI.activate(activeConfirm.id);
-        setToast({ type: 'success', message: t('productActivatedToast') });
-      } else {
-        await productAPI.deactivate(activeConfirm.id);
-        setToast({ type: 'success', message: t('productDeactivatedToast') });
-      }
-      setActiveConfirm(null);
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setToast({ type: 'error', message: err.message });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteConfirm) return;
-    try {
-      await productAPI.delete(deleteConfirm);
-      setToast({ type: 'success', message: t('productDeleted') });
-      setDeleteConfirm(null);
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setToast({ type: 'error', message: err.message });
-    }
-  };
-
   const columns = [
     {
       key: 'product',
@@ -152,18 +88,6 @@ const AdminProductsModern = () => {
     },
     { key: 'status', header: t('status'), render: (p) => <StatusBadge status={p.is_active ? 'ACTIVE' : 'DISABLED'} /> },
   ];
-
-  const renderActions = (p) => (
-    <>
-      <Button size="sm" variant="outline" icon={Pencil} onClick={() => handleOpenEdit(p)}>{t('editUser')}</Button>
-      {p.is_active ? (
-        <Button size="sm" variant="secondary" icon={Ban} onClick={() => setActiveConfirm({ id: p.id, action: 'deactivate' })}>{t('deactivateAction')}</Button>
-      ) : (
-        <Button size="sm" variant="secondary" icon={CheckCircle} onClick={() => setActiveConfirm({ id: p.id, action: 'activate' })}>{t('activateAction')}</Button>
-      )}
-      <Button size="sm" variant="danger" icon={Trash2} onClick={() => setDeleteConfirm(p.id)}>{t('delete')}</Button>
-    </>
-  );
 
   const renderMobileCard = (p) => (
     <div className="border border-neutral-200 rounded-lg p-4 space-y-3">
@@ -179,7 +103,6 @@ const AdminProductsModern = () => {
           <StatusBadge status={p.is_active ? 'ACTIVE' : 'DISABLED'} />
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 pt-1">{renderActions(p)}</div>
     </div>
   );
 
@@ -207,18 +130,13 @@ const AdminProductsModern = () => {
 
   return (
     <ModernAdminLayout>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('products')}</h1>
-            <p className="text-neutral-500 mt-1.5">{t('productsSubtitle')}</p>
-          </div>
-          <Button onClick={handleOpenCreate} icon={Plus}>
-            {t('createProduct')}
-          </Button>
+        <div>
+          <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('products')}</h1>
+          <p className="text-neutral-500 mt-1.5">{t('productsSubtitle')}</p>
         </div>
+
+        <CatalogReadOnlyNotice />
 
         <Card>
           <CardContent className="p-4">
@@ -249,10 +167,10 @@ const AdminProductsModern = () => {
             {products.length === 0 ? (
               <EmptyState
                 title={hasActiveFilters ? t('noProductsMatch') : t('noProductsYet')}
-                description={hasActiveFilters ? t('noProductsMatchDesc') : t('noProductsYetDesc')}
+                description={hasActiveFilters ? t('noProductsMatchDesc') : t('noProductsYetSyncDesc')}
                 icon={Package}
-                action={hasActiveFilters ? handleClearFilters : handleOpenCreate}
-                actionText={hasActiveFilters ? t('clear') : t('createProduct')}
+                action={hasActiveFilters ? handleClearFilters : undefined}
+                actionText={hasActiveFilters ? t('clear') : undefined}
               />
             ) : (
               <div className="space-y-4">
@@ -260,9 +178,7 @@ const AdminProductsModern = () => {
                   columns={columns}
                   rows={products}
                   rowKey={(p) => p.id}
-                  renderActions={renderActions}
                   renderMobileCard={renderMobileCard}
-                  actionsHeader={t('actions')}
                 />
                 <Pagination
                   currentPage={currentPage}
@@ -279,41 +195,6 @@ const AdminProductsModern = () => {
           </CardContent>
         </Card>
       </div>
-
-      <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title={editingProduct ? t('editProduct') : t('createProduct')}
-        size="md"
-      >
-        {showModal && (
-          <ProductFormModal
-            editingProduct={editingProduct}
-            onSubmit={handleSave}
-            onCancel={() => setShowModal(false)}
-          />
-        )}
-      </Modal>
-
-      <ConfirmModal
-        isOpen={!!activeConfirm}
-        onClose={() => setActiveConfirm(null)}
-        onConfirm={handleToggleActive}
-        title={activeConfirm?.action === 'activate' ? t('activateProductTitle') : t('deactivateProductTitle')}
-        message={activeConfirm?.action === 'activate' ? t('activateProductMessage') : t('deactivateProductMessage')}
-        confirmText={activeConfirm?.action === 'activate' ? t('activateAction') : t('deactivateAction')}
-        isDangerous={activeConfirm?.action === 'deactivate'}
-      />
-
-      <ConfirmModal
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={handleDelete}
-        title={t('deleteProductTitle')}
-        message={t('deleteProductMessage')}
-        confirmText={t('delete')}
-        isDangerous
-      />
     </ModernAdminLayout>
   );
 };
