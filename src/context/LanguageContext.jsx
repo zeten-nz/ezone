@@ -117,6 +117,9 @@ const translations = {
     easyGasWarrantyTitle: 'EasyGas kafolati',
     scanWarrantyQrHint: 'Kafolatni ochish uchun QR kodni telefon kamerasi bilan skanerlang',
     openWarrantyLink: 'Havolani ochish',
+    easyGasSyncFailedInstaller: 'EasyGas kafolatini yaratishda xatolik yuz berdi',
+    easyGasSyncErrorLabel: 'Xatolik tafsiloti',
+    easyGasInconsistentState: 'EasyGas holati nomuvofiq: sinxronizatsiya muvaffaqiyatli deb belgilangan, biroq kafolat havolasi mavjud emas.',
     // EasyGas /verify lookup (admin catalog sync page) — requires one of
     // phone/vin/serial, entered explicitly by the admin
     verifyEasyGasTitle: 'EasyGas tekshiruvi',
@@ -806,6 +809,9 @@ const translations = {
     easyGasWarrantyTitle: 'Гарантия EasyGas',
     scanWarrantyQrHint: 'Отсканируйте QR-код камерой телефона, чтобы открыть гарантию',
     openWarrantyLink: 'Открыть ссылку',
+    easyGasSyncFailedInstaller: 'Произошла ошибка при создании гарантии EasyGas',
+    easyGasSyncErrorLabel: 'Детали ошибки',
+    easyGasInconsistentState: 'Несогласованное состояние EasyGas: синхронизация помечена как успешная, но ссылка на гарантию отсутствует.',
     // EasyGas /verify lookup (admin catalog sync page) — requires one of
     // phone/vin/serial, entered explicitly by the admin
     verifyEasyGasTitle: 'Проверка EasyGas',

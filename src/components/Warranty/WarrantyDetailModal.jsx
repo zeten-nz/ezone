@@ -6,6 +6,40 @@ import AuthenticatedPhoto from '../UI/AuthenticatedPhoto';
 import ClaimUrlQr from './ClaimUrlQr';
 import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
 import { warrantyAPI } from '../../services/api';
+import { easyGasDisplayMode } from '../../utils/easyGasDisplay';
+
+/**
+ * EasyGas result block (§6). Shows the QR only when a claim_url exists; otherwise surfaces the failure state
+ * (admin sees the stored vendor error; installer sees a safe localized message — no raw error, no fake QR) or an
+ * inconsistent-state warning (sync SUCCESS but no URL). Never reconstructs a claim_url. `canReview` truthy ⇒ admin.
+ */
+const EasyGasSection = ({ form, t, canReview }) => {
+  const mode = easyGasDisplayMode(form);
+  if (mode === 'none') return null;
+  return (
+    <div className="border-t border-neutral-100 pt-5">
+      <h3 className="text-sm font-semibold text-neutral-900 mb-3">{t('easyGasWarrantyTitle')}</h3>
+      {mode === 'qr' && <ClaimUrlQr claimUrl={form.easygas_claim_url} />}
+      {mode === 'failed' && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-semibold text-red-800">
+            {canReview ? t('easyGasSyncFailed') : t('easyGasSyncFailedInstaller')}
+          </p>
+          {canReview && form.easygas_sync_error && (
+            <p className="mt-2 text-xs text-red-700 break-words">
+              <span className="font-medium">{t('easyGasSyncErrorLabel')}:</span> {form.easygas_sync_error}
+            </p>
+          )}
+        </div>
+      )}
+      {mode === 'inconsistent' && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-800">{t('easyGasInconsistentState')}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FUEL_DOT = { LPG: 'bg-blue-600', CNG: 'bg-emerald-500' };
 
@@ -180,15 +214,9 @@ const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz', onAppr
           )}
         </div>
 
-        {/* EasyGas warranty QR — only when EasyGas returned a claim_url for
-            this warranty (missing/empty renders nothing, ClaimUrlQr's own
-            guard). The QR encodes exactly the stored URL. */}
-        {form.easygas_claim_url && (
-          <div className="border-t border-neutral-100 pt-5">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-3">{t('easyGasWarrantyTitle')}</h3>
-            <ClaimUrlQr claimUrl={form.easygas_claim_url} />
-          </div>
-        )}
+        {/* EasyGas result — QR when a claim_url exists, else a truthful failure / inconsistent-state block instead of
+            silently showing nothing (§6). Admin sees the stored sync error; installer sees a safe localized message. */}
+        <EasyGasSection form={form} t={t} canReview={canReview} />
       </div>
     )}
   </Modal>
