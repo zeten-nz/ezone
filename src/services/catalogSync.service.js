@@ -14,8 +14,11 @@ export const catalogSyncService = {
   getStatus: () =>
     client.get('/catalog-sync/status'),
 
-  // Signed backend-to-backend connectivity check against EasyGas's GET
-  // /verify endpoint (the browser never talks to EasyGas directly).
-  verify: () =>
-    client.get('/catalog-sync/verify'),
+  // Signed backend-to-backend lookup against EasyGas's GET /verify endpoint
+  // (the browser never talks to EasyGas directly). EasyGas requires exactly
+  // one of { phone, vin, serial } — the backend refuses a parameterless
+  // request (400 VERIFY_QUERY_REQUIRED), so always pass a query object like
+  // { phone: '...' }.
+  verify: (query) =>
+    client.get('/catalog-sync/verify', { params: query }),
 };

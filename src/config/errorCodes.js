@@ -73,6 +73,7 @@ const ERROR_CODE_MESSAGES = {
   // controllers/catalogSyncController.js's runCatalogSync)
   CATALOG_READ_ONLY: { uz: 'Katalog EasyGas sinxronizatsiyasi orqali boshqariladi.', ru: 'Каталог управляется через синхронизацию EasyGas.' },
   SYNC_ALREADY_RUNNING: { uz: 'Sinxronlash allaqachon ishlamoqda.', ru: 'Синхронизация уже выполняется.' },
+  VERIFY_QUERY_REQUIRED: { uz: 'Tekshirish uchun telefon raqami, VIN yoki seriya raqami kiritilishi shart.', ru: 'Для проверки необходимо указать номер телефона, VIN или серийный номер.' },
 };
 
 // Fallback when the backend responds without an errorCode at all (e.g. a

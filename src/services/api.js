@@ -130,7 +130,7 @@ export const productAPI = {
 export const catalogSyncAPI = {
   run:       () => catalogSyncService.run(),
   getStatus: () => catalogSyncService.getStatus(),
-  verify:    () => catalogSyncService.verify(),
+  verify:    (query) => catalogSyncService.verify(query),
 };
 
 // ── Reports (admin) ──────────────────────────────────────────────────────────

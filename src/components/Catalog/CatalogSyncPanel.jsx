@@ -4,6 +4,8 @@ import { catalogSyncAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card, CardContent } from '../UI/Card';
 import Button from '../UI/Button';
+import Input from '../UI/Input';
+import Select from '../UI/Select';
 import StatusBadge from '../UI/StatusBadge';
 
 /**
@@ -60,10 +62,14 @@ const CatalogSyncPanel = ({ onSyncComplete }) => {
   const [summary, setSummary] = useState(null);
   const [triggering, setTriggering] = useState(false);
   const [error, setError] = useState(null);
-  // EasyGas /verify connectivity check — backend-to-backend signed GET; the
-  // result is a simple ok/failed line, nothing else depends on it.
+  // EasyGas /verify lookup — the real endpoint contract requires exactly one
+  // of phone/vin/serial (a parameterless call is a guaranteed 422), so the
+  // admin explicitly enters a value; nothing is ever auto-picked or invented.
+  // Backend-to-backend signed GET; nothing else depends on this.
+  const [verifyType, setVerifyType] = useState('phone');
+  const [verifyValue, setVerifyValue] = useState('');
   const [verifying, setVerifying] = useState(false);
-  const [verifyResult, setVerifyResult] = useState(null); // null | 'ok' | 'failed'
+  const [verifyOutcome, setVerifyOutcome] = useState(null); // null | { ok, status?, data?, errorMessage? }
   const pollRef = useRef(null);
 
   const fetchStatus = useCallback(async () => {
@@ -122,13 +128,15 @@ const CatalogSyncPanel = ({ onSyncComplete }) => {
   };
 
   const handleVerify = async () => {
+    const value = verifyValue.trim();
+    if (!value) return; // button is disabled in this state anyway
     setVerifying(true);
-    setVerifyResult(null);
+    setVerifyOutcome(null);
     try {
-      const response = await catalogSyncAPI.verify();
-      setVerifyResult(response.data.ok ? 'ok' : 'failed');
-    } catch {
-      setVerifyResult('failed');
+      const response = await catalogSyncAPI.verify({ [verifyType]: value });
+      setVerifyOutcome(response.data);
+    } catch (err) {
+      setVerifyOutcome({ ok: false, errorMessage: err.message });
     } finally {
       setVerifying(false);
     }
@@ -158,21 +166,59 @@ const CatalogSyncPanel = ({ onSyncComplete }) => {
               <p className="text-xs text-red-600">{parseFailureMessage(summary.message, t)}</p>
             )}
             {error && <p className="text-xs text-red-600">{error}</p>}
-            {verifyResult === 'ok' && (
-              <p className="text-xs text-green-600">{t('easyGasConnectionOk')}</p>
-            )}
-            {verifyResult === 'failed' && (
-              <p className="text-xs text-red-600">{t('easyGasConnectionFailed')}</p>
-            )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" onClick={handleVerify} icon={ShieldCheck} loading={verifying}>
-              {t('verifyEasyGasConnection')}
-            </Button>
-            <Button onClick={handleSync} icon={RefreshCw} loading={triggering} disabled={isRunning}>
-              {isRunning ? t('syncRunning') : t('syncCatalogButton')}
+          <Button onClick={handleSync} icon={RefreshCw} loading={triggering} disabled={isRunning}>
+            {isRunning ? t('syncRunning') : t('syncCatalogButton')}
+          </Button>
+        </div>
+
+        {/* EasyGas /verify lookup — requires an explicit phone/VIN/serial (a
+            parameterless request is a guaranteed 422 on EasyGas's side and is
+            never sent; the backend enforces this too). */}
+        <div className="pt-4 border-t border-neutral-100 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-neutral-900">{t('verifyEasyGasTitle')}</p>
+            <p className="text-xs text-neutral-500 mt-0.5">{t('verifyEasyGasHint')}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-[10rem_1fr_auto] gap-3 items-start">
+            <Select
+              value={verifyType}
+              onChange={(e) => setVerifyType(e.target.value)}
+              options={[
+                { value: 'phone', label: t('verifyTypePhone') },
+                { value: 'vin', label: t('verifyTypeVin') },
+                { value: 'serial', label: t('verifyTypeSerial') },
+              ]}
+            />
+            <Input
+              value={verifyValue}
+              onChange={(e) => setVerifyValue(e.target.value)}
+              placeholder={t('verifyEasyGasHint')}
+            />
+            <Button
+              variant="outline"
+              icon={ShieldCheck}
+              onClick={handleVerify}
+              loading={verifying}
+              disabled={!verifyValue.trim()}
+            >
+              {t('verifyRunButton')}
             </Button>
           </div>
+          {verifyOutcome && (
+            <div className="space-y-1.5">
+              <p className={`text-xs ${verifyOutcome.ok ? 'text-green-600' : 'text-red-600'}`}>
+                {verifyOutcome.ok ? t('verifyOkResult') : t('verifyFailedResult')}
+                {verifyOutcome.status ? ` (HTTP ${verifyOutcome.status})` : ''}
+                {verifyOutcome.errorMessage ? ` — ${verifyOutcome.errorMessage}` : ''}
+              </p>
+              {verifyOutcome.data != null && (
+                <pre className="text-xs text-neutral-700 bg-neutral-50 border border-neutral-200 rounded-lg p-3 overflow-x-auto max-h-64">
+                  {JSON.stringify(verifyOutcome.data, null, 2)}
+                </pre>
+              )}
+            </div>
+          )}
         </div>
 
         {summary?.status === 'SUCCESS' && summary?.details && (
