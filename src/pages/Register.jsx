@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Fuel, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { authAPI, branchAPI } from '../services/api';
 import Input from '../components/UI/Input';
 import Select from '../components/UI/Select';
@@ -132,10 +132,9 @@ const Register = () => {
         className="w-full max-w-lg"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center mb-4">
-            <Fuel className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="text-xl font-semibold text-neutral-900">STAG</h1>
+          {/* EasyGas lockup (mark + wordmark, transparent PNG) */}
+          <img src="/easygas-side-text.png" alt="EasyGas" className="h-12 w-auto max-w-full mb-3" />
+          <h1 className="sr-only">EasyGas</h1>
           <p className="text-sm text-neutral-500 mt-1">{t('loginTitle')}</p>
         </div>
 
@@ -275,7 +274,7 @@ const Register = () => {
         </div>
 
         <p className="mt-6 text-center text-xs text-neutral-400">
-          &copy; 2026 STAG {t('loginTitle')}
+          &copy; 2026 EasyGas {t('loginTitle')}
         </p>
       </motion.div>
     </div>

@@ -123,6 +123,14 @@ const translations = {
     viewEasyGasWarranty: 'EasyGas kafolatini ko\'rish',
     viewEasyGasWarrantyShort: 'EasyGas',
     easyGasSyncFailed: 'EasyGas tizimiga yuborishda xatolik yuz berdi',
+    // EasyGas claim_url QR presentation
+    easyGasWarrantyTitle: 'EasyGas kafolati',
+    scanWarrantyQrHint: 'Kafolatni ochish uchun QR kodni telefon kamerasi bilan skanerlang',
+    openWarrantyLink: 'Havolani ochish',
+    // EasyGas connection verification (admin catalog sync page)
+    verifyEasyGasConnection: 'EasyGas aloqasini tekshirish',
+    easyGasConnectionOk: 'EasyGas bilan aloqa ishlayapti',
+    easyGasConnectionFailed: 'EasyGas bilan aloqa o\'rnatilmadi',
     save: 'Saqlash',
     cancel: 'Bekor',
     delete: 'O\'chirish',
@@ -808,6 +816,14 @@ const translations = {
     viewEasyGasWarranty: 'Посмотреть гарантию EasyGas',
     viewEasyGasWarrantyShort: 'EasyGas',
     easyGasSyncFailed: 'Ошибка отправки в EasyGas',
+    // EasyGas claim_url QR presentation
+    easyGasWarrantyTitle: 'Гарантия EasyGas',
+    scanWarrantyQrHint: 'Отсканируйте QR-код камерой телефона, чтобы открыть гарантию',
+    openWarrantyLink: 'Открыть ссылку',
+    // EasyGas connection verification (admin catalog sync page)
+    verifyEasyGasConnection: 'Проверить связь с EasyGas',
+    easyGasConnectionOk: 'Связь с EasyGas работает',
+    easyGasConnectionFailed: 'Не удалось связаться с EasyGas',
     save: 'Сохранить',
     cancel: 'Отмена',
     delete: 'Удалить',

@@ -14,25 +14,14 @@ import client from '../api/client';
 // already top-level (one fuel type for the whole installation, not per
 // row), so `...data` carries it through unchanged. That shape translation
 // happens here once rather than in every page that submits a warranty form.
-//
-// manual_verification/seller_name/seller_phone/comment/
-// manual_verification_photo_filename: Manual Verification workflow fields —
-// only meaningful when a row's barcode resolved to BARCODE_NOT_FOUND and the
-// installer opted in (see EquipmentRow.jsx), but always passed through
-// as-is; the server independently re-derives whether the manual path is
-// actually allowed for this row (see validateBarcodeOrAcceptManual) rather
-// than trusting the flag.
+// Manual Verification fields are no longer sent — that workflow is disabled
+// (temporary product decision); the server ignores them either way.
 const toWirePayload = (data) => ({
   ...data,
   equipment: (data.equipment || []).map((e) => ({
     equipment_type: e.equipment_type,
     product_id: e.product?.id,
     serial_number: e.serial_number || null,
-    manual_verification: e.manual_verification || false,
-    seller_name: e.seller_name || null,
-    seller_phone: e.seller_phone || null,
-    comment: e.comment || null,
-    manual_verification_photo_filename: e.manual_verification_photo_filename || null,
   })),
 });
 
@@ -72,7 +61,11 @@ export const warrantyService = {
   search: (search, filterType) =>
     client.get('/warranty/search', { params: { search, filterType } }),
 
-  // ── Manual Verification workflow (admin review) ─────────────────────────
+  // ── Manual Verification review (HISTORICAL-ONLY) ────────────────────────
+  // The active workflow can no longer produce a PENDING row (Manual
+  // Verification is disabled), but warranties submitted under the old flow
+  // may still hold rows awaiting review — these remain so the admin can
+  // resolve that backlog.
   approveVerification: (equipmentId, notes) =>
     client.post(`/warranty/equipment/${equipmentId}/approve-verification`, { notes }),
 
@@ -90,19 +83,6 @@ export const warrantyService = {
 
   rejectForm: (formId, notes) =>
     client.post(`/warranty/${formId}/reject`, { notes }),
-
-  // Pre-upload for a Manual Verification equipment photo — returns
-  // { filename }, which the caller then attaches to that equipment row's
-  // manual_verification_photo_filename before submitting the warranty form
-  // itself (see toWirePayload above and EquipmentRow.jsx). Same multipart
-  // pattern as authService.updateProfilePhoto.
-  uploadEquipmentPhoto: (photo) => {
-    const formData = new FormData();
-    formData.append('photo', photo);
-    return client.post('/warranty/equipment-photo', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
 
   // ADMIN-only — same authenticated-blob pattern as
   // registrationRequestsService.getPhotoBlob (can't be used directly as an

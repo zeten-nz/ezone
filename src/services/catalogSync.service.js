@@ -13,4 +13,9 @@ export const catalogSyncService = {
 
   getStatus: () =>
     client.get('/catalog-sync/status'),
+
+  // Signed backend-to-backend connectivity check against EasyGas's GET
+  // /verify endpoint (the browser never talks to EasyGas directly).
+  verify: () =>
+    client.get('/catalog-sync/verify'),
 };

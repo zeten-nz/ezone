@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Car, History, Clock, ExternalLink } from 'lucide-react';
+import { Search, Car, History, Clock, QrCode } from 'lucide-react';
 import ModernEmployeeLayout from '../components/ModernEmployeeLayout';
 import { warrantyAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,6 +16,7 @@ import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
 import StatusBadge from '../components/UI/StatusBadge';
 import WarrantyDetailModal from '../components/Warranty/WarrantyDetailModal';
+import ClaimUrlQr from '../components/Warranty/ClaimUrlQr';
 import WarrantyFormFields, { validateWarrantyForm } from '../components/WarrantyFormFields';
 import { toEditableEquipment } from '../config/equipmentCategories';
 
@@ -51,6 +52,9 @@ const EmployeeWarrantyHistoryModern = () => {
   // ── Detail modal state ───────────────────────────────────────────────────────
   const [selectedForm, setSelectedForm] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
+
+  // ── EasyGas QR modal state — the warranty whose claim_url QR is open ────────
+  const [qrForm, setQrForm] = useState(null);
 
   // ── Edit modal state ─────────────────────────────────────────────────────────
   const [editFormData, setEditFormData] = useState(null);
@@ -213,15 +217,14 @@ const EmployeeWarrantyHistoryModern = () => {
           {t('editWarranty')}
         </Button>
         {form.easygas_claim_url && (
-          // Short visible label + full phrase as a tooltip (title) — the
-          // full "View EasyGas Warranty" text was wide enough to push this
-          // button off-screen next to View/Edit at normal desktop widths.
+          // Opens the claim_url as a QR code (primary presentation) with a
+          // secondary "Open link" action inside the modal — see ClaimUrlQr.
           <Button
             size="sm"
             variant="success"
-            icon={ExternalLink}
+            icon={QrCode}
             title={t('viewEasyGasWarranty')}
-            onClick={() => window.open(form.easygas_claim_url, '_blank', 'noopener,noreferrer')}
+            onClick={() => setQrForm(form)}
           >
             {t('viewEasyGasWarrantyShort')}
           </Button>
@@ -353,6 +356,15 @@ const EmployeeWarrantyHistoryModern = () => {
         t={t}
         language={language}
       />
+
+      {/* ── EasyGas warranty QR modal ─────────────────────────────────────────── */}
+      <Modal isOpen={!!qrForm} onClose={() => setQrForm(null)} title={t('easyGasWarrantyTitle')} size="sm">
+        {qrForm && (
+          <div className="py-2">
+            <ClaimUrlQr claimUrl={qrForm.easygas_claim_url} size={208} />
+          </div>
+        )}
+      </Modal>
 
       {/* ── Edit modal ────────────────────────────────────────────────────────── */}
       <Modal isOpen={!!editFormData} onClose={handleEditClose} title={t('editWarrantyTitle')} size="2xl">

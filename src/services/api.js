@@ -62,7 +62,6 @@ export const warrantyAPI = {
   rejectVerification:     (equipmentId, notes) => warrantyService.rejectVerification(equipmentId, notes),
   approveForm:            (formId, notes)       => warrantyService.approveForm(formId, notes),
   rejectForm:             (formId, notes)       => warrantyService.rejectForm(formId, notes),
-  uploadEquipmentPhoto:   (photo)              => warrantyService.uploadEquipmentPhoto(photo),
   getEquipmentPhotoBlob:  (equipmentId)        => warrantyService.getEquipmentPhotoBlob(equipmentId),
 };
 
@@ -131,6 +130,7 @@ export const productAPI = {
 export const catalogSyncAPI = {
   run:       () => catalogSyncService.run(),
   getStatus: () => catalogSyncService.getStatus(),
+  verify:    () => catalogSyncService.verify(),
 };
 
 // ── Reports (admin) ──────────────────────────────────────────────────────────

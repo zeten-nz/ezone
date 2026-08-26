@@ -39,16 +39,19 @@ const ERROR_CODE_MESSAGES = {
   NETWORK_ERROR: { uz: 'Internet aloqasini tekshiring.', ru: 'Проверьте подключение к интернету.' },
   UNKNOWN_ERROR: { uz: "Nimadir xato ketdi. Qaytadan urinib ko'ring.", ru: 'Что-то пошло не так. Попробуйте снова.' },
 
-  // Inventory barcode validation (Phase 2 — see ezone-server/services/inventoryService.js's
-  // validateBarcode) — returned both by the instant-feedback
-  // GET /api/inventory/validate/:barcode endpoint and by warranty create/update.
+  // Inventory barcode validation — still returned by the standalone
+  // Inventory module's GET /api/inventory/validate/:barcode endpoint (the
+  // warranty workflow no longer performs inventory validation; temporary
+  // product decision). BARCODE_REQUIRED is reused by warranty create/update
+  // for a missing SERIAL NUMBER — the code was kept stable so older clients
+  // keep resolving it, only the wording changed.
   BARCODE_NOT_FOUND: { uz: "Bu shtrix-kod ombor tizimida topilmadi.", ru: 'Этот штрих-код не найден в системе склада.' },
   BARCODE_WRONG_PRODUCT: { uz: "Bu shtrix-kod boshqa mahsulotga tegishli.", ru: 'Этот штрих-код принадлежит другому продукту.' },
   BARCODE_WRONG_CATEGORY: { uz: "Bu shtrix-kod ushbu jihoz turi uchun mos emas.", ru: 'Этот штрих-код не подходит для данного типа оборудования.' },
   BARCODE_PRODUCT_INACTIVE: { uz: "Bu shtrix-kodga tegishli mahsulot endi faol emas.", ru: 'Продукт этого штрих-кода больше не активен.' },
   BARCODE_NOT_AVAILABLE: { uz: "Bu shtrix-kod hozir mavjud emas (allaqachon o'rnatilgan yoki boshqa holatda).", ru: 'Этот штрих-код сейчас недоступен (уже установлен или в другом статусе).' },
   BARCODE_CLAIM_FAILED: { uz: "Bu shtrix-kod hozirgina band qilindi — boshqa birini tanlang.", ru: 'Этот штрих-код только что был занят — выберите другой.' },
-  BARCODE_REQUIRED: { uz: "Har bir jihoz uchun shtrix-kod kiritilishi shart.", ru: 'Для каждого оборудования необходимо указать штрих-код.' },
+  BARCODE_REQUIRED: { uz: "Har bir jihoz uchun seriya raqami kiritilishi shart.", ru: 'Для каждого оборудования необходимо указать серийный номер.' },
 
   // Manual Verification workflow (see ezone-server/services/inventoryService.js's
   // validateBarcodeOrAcceptManual) — only reachable when the barcode

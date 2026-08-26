@@ -3,6 +3,7 @@ import { Modal } from '../UI/Modal';
 import StatusBadge from '../UI/StatusBadge';
 import Button from '../UI/Button';
 import AuthenticatedPhoto from '../UI/AuthenticatedPhoto';
+import ClaimUrlQr from './ClaimUrlQr';
 import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
 import { warrantyAPI } from '../../services/api';
 
@@ -178,6 +179,16 @@ const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz', onAppr
             <p className="text-sm text-neutral-500">—</p>
           )}
         </div>
+
+        {/* EasyGas warranty QR — only when EasyGas returned a claim_url for
+            this warranty (missing/empty renders nothing, ClaimUrlQr's own
+            guard). The QR encodes exactly the stored URL. */}
+        {form.easygas_claim_url && (
+          <div className="border-t border-neutral-100 pt-5">
+            <h3 className="text-sm font-semibold text-neutral-900 mb-3">{t('easyGasWarrantyTitle')}</h3>
+            <ClaimUrlQr claimUrl={form.easygas_claim_url} />
+          </div>
+        )}
       </div>
     )}
   </Modal>

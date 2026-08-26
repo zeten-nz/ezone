@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Fuel, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -26,11 +26,13 @@ const Sidebar = () => {
       >
         <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-              <Fuel className="w-4.5 h-4.5 text-white" />
+            {/* EasyGas mark on a white chip so it stays legible on the dark
+                sidebar (the PNG is a transparent blue/red mark). */}
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0 p-1">
+              <img src="/easygas-none-text.png" alt="EasyGas" className="w-full h-full object-contain" />
             </div>
             {!collapsed && (
-              <span className="text-lg font-semibold text-white truncate">STAG</span>
+              <span className="text-lg font-semibold text-white truncate">EasyGas</span>
             )}
           </div>
           <button

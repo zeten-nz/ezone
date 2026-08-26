@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { catalogSyncAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card, CardContent } from '../UI/Card';
@@ -60,6 +60,10 @@ const CatalogSyncPanel = ({ onSyncComplete }) => {
   const [summary, setSummary] = useState(null);
   const [triggering, setTriggering] = useState(false);
   const [error, setError] = useState(null);
+  // EasyGas /verify connectivity check — backend-to-backend signed GET; the
+  // result is a simple ok/failed line, nothing else depends on it.
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null); // null | 'ok' | 'failed'
   const pollRef = useRef(null);
 
   const fetchStatus = useCallback(async () => {
@@ -117,6 +121,19 @@ const CatalogSyncPanel = ({ onSyncComplete }) => {
     }
   };
 
+  const handleVerify = async () => {
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const response = await catalogSyncAPI.verify();
+      setVerifyResult(response.data.ok ? 'ok' : 'failed');
+    } catch {
+      setVerifyResult('failed');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const isRunning = summary?.status === 'RUNNING';
   const lastSyncedAt = formatDateTime(summary?.lastSyncedAt);
   const duration = formatDuration(summary?.durationMs);
@@ -141,10 +158,21 @@ const CatalogSyncPanel = ({ onSyncComplete }) => {
               <p className="text-xs text-red-600">{parseFailureMessage(summary.message, t)}</p>
             )}
             {error && <p className="text-xs text-red-600">{error}</p>}
+            {verifyResult === 'ok' && (
+              <p className="text-xs text-green-600">{t('easyGasConnectionOk')}</p>
+            )}
+            {verifyResult === 'failed' && (
+              <p className="text-xs text-red-600">{t('easyGasConnectionFailed')}</p>
+            )}
           </div>
-          <Button onClick={handleSync} icon={RefreshCw} loading={triggering} disabled={isRunning}>
-            {isRunning ? t('syncRunning') : t('syncCatalogButton')}
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" onClick={handleVerify} icon={ShieldCheck} loading={verifying}>
+              {t('verifyEasyGasConnection')}
+            </Button>
+            <Button onClick={handleSync} icon={RefreshCw} loading={triggering} disabled={isRunning}>
+              {isRunning ? t('syncRunning') : t('syncCatalogButton')}
+            </Button>
+          </div>
         </div>
 
         {summary?.status === 'SUCCESS' && summary?.details && (
