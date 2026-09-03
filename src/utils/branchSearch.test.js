@@ -70,3 +70,39 @@ test('scales to 250+ branches without issue', () => {
   assert.equal(filterBranches(many, '').length, 300);
   assert.deepEqual(filterBranches(many, 'branch 299').map((b) => b.id), [299]);
 });
+
+// ── Beta-2: business-type filter (§37) ──────────────────────────────────────
+const TYPED = [
+  { id: 1, code: '01/1', name: 'EG MCHJ', region: 'Toshkent', is_active: 1, branch_type: 'EASYGAS' },
+  { id: 2, code: '10/1', name: 'STAG servis', region: 'Toshkent vil.', is_active: 1, branch_type: 'STAG_SERVICE' },
+  { id: 3, code: '10/2', name: 'Boshqa usta', region: 'Toshkent vil.', is_active: 1, branch_type: 'OTHER_SERVICE' },
+  { id: 4, code: '12/14', name: 'Yangi filial', region: 'Namangan', is_active: 1, branch_type: null },
+  { id: 5, code: '20/5', name: 'Nofaol STAG', region: 'Sirdaryo', is_active: 0, branch_type: 'STAG_SERVICE' },
+];
+
+test('37.50 type ALL returns every active branch regardless of classification', () => {
+  assert.deepEqual(filterBranches(TYPED, '', { type: 'ALL' }).map((b) => b.id), [1, 2, 3, 4]);
+});
+
+test('37.51/52/53 concrete type filters (EasyGas / STAG Service / Other Services)', () => {
+  assert.deepEqual(filterBranches(TYPED, '', { type: 'EASYGAS' }).map((b) => b.id), [1]);
+  assert.deepEqual(filterBranches(TYPED, '', { type: 'STAG_SERVICE' }).map((b) => b.id), [2]);
+  assert.deepEqual(filterBranches(TYPED, '', { type: 'OTHER_SERVICE' }).map((b) => b.id), [3]);
+});
+
+test('37.54/59 UNCLASSIFIED matches only branch_type NULL (and undefined)', () => {
+  assert.deepEqual(filterBranches(TYPED, '', { type: 'UNCLASSIFIED' }).map((b) => b.id), [4]);
+  assert.equal(filterBranches([{ id: 9, code: 'X', name: 'no field', is_active: 1 }], '', { type: 'UNCLASSIFIED' }).length, 1);
+});
+
+test('37.55/56 type filter COMBINES with code and name search', () => {
+  assert.deepEqual(filterBranches(TYPED, '10/1', { type: 'STAG_SERVICE' }).map((b) => b.id), [2]);
+  assert.deepEqual(filterBranches(TYPED, '10/2', { type: 'STAG_SERVICE' }), []); // code exists but wrong type
+  assert.deepEqual(filterBranches(TYPED, 'boshqa', { type: 'OTHER_SERVICE' }).map((b) => b.id), [3]);
+});
+
+test('37.57/58/60 inactive stays excluded under every type; active unclassified selectable under All; objects pass through untouched', () => {
+  assert.deepEqual(filterBranches(TYPED, '', { type: 'STAG_SERVICE' }).map((b) => b.id), [2]); // id 5 inactive → excluded
+  assert.ok(filterBranches(TYPED, '', { type: 'ALL' }).some((b) => b.id === 4)); // active + NULL type ≠ inactive
+  assert.equal(filterBranches(TYPED, '', { type: 'EASYGAS' })[0], TYPED[0]); // same reference — id submission unchanged
+});

@@ -74,6 +74,18 @@ const ERROR_CODE_MESSAGES = {
   CATALOG_READ_ONLY: { uz: 'Katalog EasyGas sinxronizatsiyasi orqali boshqariladi.', ru: 'Каталог управляется через синхронизацию EasyGas.' },
   SYNC_ALREADY_RUNNING: { uz: 'Sinxronlash allaqachon ishlamoqda.', ru: 'Синхронизация уже выполняется.' },
   VERIFY_QUERY_REQUIRED: { uz: 'Tekshirish uchun telefon raqami, VIN yoki seriya raqami kiritilishi shart.', ru: 'Для проверки необходимо указать номер телефона, VIN или серийный номер.' },
+
+  // Managed employee usernames + branch classification (Beta-2 — see
+  // ezone-server/services/managedEmployeeService.js)
+  INVALID_EMPLOYEE_USERNAME_FORMAT: { uz: "Username formati noto'g'ri. Masalan: eg_ali_01_1", ru: 'Неверный формат username. Например: eg_ali_01_1' },
+  INVALID_EMPLOYEE_USERNAME_PREFIX: { uz: "Username prefiksi noto'g'ri. Ruxsat etilganlar: eg, st, bs", ru: 'Неверный префикс username. Допустимые: eg, st, bs' },
+  USERNAME_BRANCH_REQUIRED: { uz: 'Bu username filial kodini bildiradi — filialni ham tanlang.', ru: 'Этот username указывает код филиала — выберите и филиал.' },
+  USERNAME_BRANCH_MISMATCH: { uz: "Username'dagi filial kodi tanlangan filialga mos kelmaydi.", ru: 'Код филиала в username не совпадает с выбранным филиалом.' },
+  BRANCH_TYPE_CONFLICT: { uz: 'Bu filial boshqa servis turiga tegishli qilib belgilangan.', ru: 'Этот филиал уже закреплён за другим типом сервиса.' },
+  BRANCH_NOT_FOUND: { uz: 'Tanlangan filial topilmadi.', ru: 'Выбранный филиал не найден.' },
+  // Beta-2.1
+  LEGACY_EMPLOYEE_BRANCH_CHANGE: { uz: "Eski formatdagi xodimni boshqa filialga ko'chirish uchun managed username bilan yangi akkaunt yaratish kerak.", ru: 'Чтобы перевести сотрудника со старым username в другой филиал, создайте новый аккаунт с managed username.' },
+  BRANCH_RECLASSIFICATION_CONFLICT: { uz: "Filialga biriktirilgan managed xodimlar boshqa servis turini belgilaydi — tuzatib bo'lmaydi.", ru: 'Закреплённые managed-сотрудники филиала указывают другой тип сервиса — исправление невозможно.' },
 };
 
 // Fallback when the backend responds without an errorCode at all (e.g. a

@@ -10,6 +10,11 @@ import client from '../api/client';
 export const branchesService = {
   // Unauthenticated — the registration form needs a branch picker before
   // the applicant has any account at all.
+  // Beta-2.1: EXPLICIT Super-Admin-only branch-type correction — branchType
+  // is one of the canonical types, or null to reset to unclassified.
+  reclassify: (branchId, branchType) =>
+    client.patch(`/branches/${branchId}/reclassify`, { branch_type: branchType }),
+
   getPublic: () =>
     client.get('/branches/public'),
 

@@ -135,6 +135,25 @@ const translations = {
     branchSearchPlaceholder: "Filial kodi yoki nomi bo'yicha qidiring",
     branchSearchOptionalPlaceholder: "Filial (ixtiyoriy) — kodi yoki nomi bo'yicha qidiring",
     noBranchesFound: 'Filial topilmadi',
+    // ── Branch business-group classification (Beta-2) ──
+    branchTypeLabel: 'Servis turi',
+    branchTypeFilterAll: 'Barchasi',
+    branchTypeEasyGas: 'EasyGas',
+    branchTypeStagService: 'STAG Service',
+    branchTypeOtherService: 'Boshqa servislar',
+    branchTypeUnclassified: 'Tayinlanmagan',
+    usernameFormatHelperTitle: 'Username formati: prefix_ism_viloyat_filial',
+    usernamePrefixLegend: 'eg = EasyGas · st = STAG Service · bs = Boshqa servis',
+    usernameBranchMismatchHint: "Username'dagi filial kodi tanlangan filialga mos kelmaydi",
+    // ── Beta-2.1: registration approval + explicit reclassification ──
+    applicantUsernameLabel: "Ariza beruvchining username'i",
+    approveRequestFinalUsername: 'Yakuniy managed username',
+    approveRequestUsernameHint: "Ariza beruvchining o'z username'i yakuniy hisob bo'lmaydi — administrator managed username kiritadi.",
+    reclassifyBranchAction: 'Servis turini tuzatish',
+    reclassifyBranchWarning: "Bu istisno tuzatish amali: filial servis turi odatda xodimlarni ro'yxatga olish orqali belgilanadi. Faqat noto'g'ri belgilangan holatni tuzatish uchun foydalaning.",
+    currentTypeLabel: 'Joriy tur',
+    newTypeLabel: 'Yangi tur',
+    branchReclassified: 'Filial servis turi yangilandi',
     easyGasInconsistentState: 'EasyGas holati nomuvofiq: sinxronizatsiya muvaffaqiyatli deb belgilangan, biroq kafolat havolasi mavjud emas.',
     // EasyGas /verify lookup (admin catalog sync page) — requires one of
     // phone/vin/serial, entered explicitly by the admin
@@ -843,6 +862,25 @@ const translations = {
     branchSearchPlaceholder: 'Поиск по коду или названию филиала',
     branchSearchOptionalPlaceholder: 'Филиал (необязательно) — поиск по коду или названию',
     noBranchesFound: 'Филиал не найден',
+    // ── Branch business-group classification (Beta-2) ──
+    branchTypeLabel: 'Тип сервиса',
+    branchTypeFilterAll: 'Все',
+    branchTypeEasyGas: 'EasyGas',
+    branchTypeStagService: 'STAG Service',
+    branchTypeOtherService: 'Другие сервисы',
+    branchTypeUnclassified: 'Не назначено',
+    usernameFormatHelperTitle: 'Формат username: prefix_imya_region_filial',
+    usernamePrefixLegend: 'eg = EasyGas · st = STAG Service · bs = Другие сервисы',
+    usernameBranchMismatchHint: 'Код филиала в username не совпадает с выбранным филиалом',
+    // ── Beta-2.1: registration approval + explicit reclassification ──
+    applicantUsernameLabel: 'Username заявителя',
+    approveRequestFinalUsername: 'Финальный managed username',
+    approveRequestUsernameHint: 'Собственный username заявителя не становится финальным аккаунтом — администратор вводит managed username.',
+    reclassifyBranchAction: 'Исправить тип сервиса',
+    reclassifyBranchWarning: 'Это исключительная корректирующая операция: тип сервиса филиала обычно устанавливается при онбординге сотрудников. Используйте только для исправления неверно установленного типа.',
+    currentTypeLabel: 'Текущий тип',
+    newTypeLabel: 'Новый тип',
+    branchReclassified: 'Тип сервиса филиала обновлён',
     easyGasInconsistentState: 'Несогласованное состояние EasyGas: синхронизация помечена как успешная, но ссылка на гарантию отсутствует.',
     // EasyGas /verify lookup (admin catalog sync page) — requires one of
     // phone/vin/serial, entered explicitly by the admin

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, Plus, Pencil, Ban, CheckCircle, Building2 } from 'lucide-react';
+import { Search, Plus, Pencil, Ban, CheckCircle, Building2, ShieldAlert } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
 import { branchAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
 import Button from '../components/UI/Button';
@@ -16,11 +17,17 @@ import ErrorState from '../components/UI/ErrorState';
 import DataTable from '../components/UI/DataTable';
 import Pagination from '../components/UI/Pagination';
 import BranchFormModal from '../components/Branches/BranchFormModal';
+import BranchReclassifyModal from '../components/Branches/BranchReclassifyModal';
+import { branchTypeFilterOptions } from '../config/branchTypes';
 
 const PAGE_SIZE = 10;
 
 const AdminBranchesModern = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const isSuperAdmin = !!user?.is_super_admin; // gates the corrective reclassification action (same pattern as inventory manual ops)
+  const [reclassifyTarget, setReclassifyTarget] = useState(null); // branch being corrected
+  const [reclassifySubmitting, setReclassifySubmitting] = useState(false);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,6 +37,7 @@ const AdminBranchesModern = () => {
   const [statusConfirm, setStatusConfirm] = useState(null); // { id, action: 'enable' | 'disable' }
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('ALL'); // Beta-2 business-type filter
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchBranches = useCallback(async (showLoader = true) => {
@@ -63,9 +71,14 @@ const AdminBranchesModern = () => {
         b.phone?.toLowerCase().includes(q);
       const matchesStatus =
         statusFilter === 'all' || (statusFilter === 'active' ? b.is_active : !b.is_active);
-      return matchesSearch && matchesStatus;
+      // branch_type filter — UNCLASSIFIED means NULL; independent of the
+      // active/inactive status filter above.
+      const matchesType =
+        typeFilter === 'ALL' ||
+        (typeFilter === 'UNCLASSIFIED' ? !b.branch_type : b.branch_type === typeFilter);
+      return matchesSearch && matchesStatus && matchesType;
     });
-  }, [branches, search, statusFilter]);
+  }, [branches, search, statusFilter, typeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageSafe = Math.min(currentPage, totalPages);
@@ -81,13 +94,19 @@ const AdminBranchesModern = () => {
     setCurrentPage(1);
   };
 
-  const handleClearFilters = () => {
-    setSearch('');
-    setStatusFilter('all');
+  const handleTypeChange = (value) => {
+    setTypeFilter(value);
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = search !== '' || statusFilter !== 'all';
+  const handleClearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setTypeFilter('ALL');
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = search !== '' || statusFilter !== 'all' || typeFilter !== 'ALL';
 
   const handleOpenCreate = () => {
     setEditingBranch(null);
@@ -153,17 +172,47 @@ const AdminBranchesModern = () => {
       ),
     },
     {
+      // Persisted business classification (Beta-2) — a TEXT badge, never
+      // color-only; NULL renders as "Tayinlanmagan".
+      key: 'branchType',
+      header: t('branchTypeLabel'),
+      render: (b) => <StatusBadge status={`BRANCH_TYPE_${b.branch_type || 'UNCLASSIFIED'}`} />,
+    },
+    {
       key: 'status',
       header: t('status'),
       render: (b) => <StatusBadge status={b.is_active ? 'ACTIVE' : 'DISABLED'} />,
     },
   ];
 
+  // Beta-2.1: explicit corrective reclassification — Super-Admin only, its
+  // own deliberate modal (never part of the ordinary edit form, which keeps
+  // classification read-only).
+  const handleReclassify = async (targetType) => {
+    if (!reclassifyTarget) return;
+    setReclassifySubmitting(true);
+    try {
+      await branchAPI.reclassify(reclassifyTarget.id, targetType);
+      setToast({ type: 'success', message: t('branchReclassified') });
+      setReclassifyTarget(null);
+      await fetchBranches(false);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setReclassifySubmitting(false);
+    }
+  };
+
   const renderActions = (b) => (
     <>
       <Button size="sm" variant="outline" icon={Pencil} onClick={() => handleOpenEdit(b)}>
         {t('editUser')}
       </Button>
+      {isSuperAdmin && (
+        <Button size="sm" variant="secondary" icon={ShieldAlert} onClick={() => setReclassifyTarget(b)}>
+          {t('reclassifyBranchAction')}
+        </Button>
+      )}
       {b.is_active ? (
         <Button size="sm" variant="danger" icon={Ban} onClick={() => setStatusConfirm({ id: b.id, action: 'disable' })}>
           {t('disableAction')}
@@ -188,6 +237,7 @@ const AdminBranchesModern = () => {
         </div>
         <div className="flex flex-col items-end gap-1">
           <StatusBadge status={b.is_active ? 'ACTIVE' : 'DISABLED'} />
+          <StatusBadge status={`BRANCH_TYPE_${b.branch_type || 'UNCLASSIFIED'}`} />
         </div>
       </div>
       <dl className="grid grid-cols-2 gap-2 text-xs">
@@ -244,12 +294,17 @@ const AdminBranchesModern = () => {
 
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3">
               <Input
                 icon={Search}
                 placeholder={t('searchBranchesPlaceholder')}
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
+              />
+              <Select
+                value={typeFilter}
+                onChange={(e) => handleTypeChange(e.target.value)}
+                options={branchTypeFilterOptions(t)}
               />
               <Select
                 value={statusFilter}
@@ -325,6 +380,22 @@ const AdminBranchesModern = () => {
             editingBranch={editingBranch}
             onSubmit={handleSave}
             onCancel={() => setShowModal(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={!!reclassifyTarget}
+        onClose={() => setReclassifyTarget(null)}
+        title={t('reclassifyBranchAction')}
+        size="md"
+      >
+        {reclassifyTarget && (
+          <BranchReclassifyModal
+            branch={reclassifyTarget}
+            onConfirm={handleReclassify}
+            onCancel={() => setReclassifyTarget(null)}
+            submitting={reclassifySubmitting}
           />
         )}
       </Modal>

@@ -8,7 +8,8 @@ import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Select from '../components/UI/Select';
 import Toast from '../components/UI/Toast';
-import { ConfirmModal } from '../components/UI/Modal';
+import { Modal } from '../components/UI/Modal';
+import ApproveRequestModal from '../components/RegistrationRequests/ApproveRequestModal';
 import StatusBadge from '../components/UI/StatusBadge';
 import EmptyState from '../components/UI/EmptyState';
 import Skeleton, { SkeletonTable } from '../components/UI/Skeleton';
@@ -96,11 +97,14 @@ const AdminRegistrationRequestsModern = () => {
 
   const detailRequest = requests.find((r) => r.id === detailId) || null;
 
-  const handleApprove = async () => {
+  // Beta-2.1: approval now carries the admin-supplied FINAL managed
+  // username (+ confirmed/overridden branch) — the backend validates and
+  // classifies inside the approval transaction.
+  const handleApprove = async ({ username, branch_id }) => {
     if (!approveConfirm) return;
     setActionSubmitting(true);
     try {
-      await registrationRequestsAPI.approve(approveConfirm);
+      await registrationRequestsAPI.approve(approveConfirm.id, { username, branch_id });
       setToast({ type: 'success', message: t('requestApproved') });
       setApproveConfirm(null);
       await fetchRequests(false);
@@ -179,7 +183,7 @@ const AdminRegistrationRequestsModern = () => {
       </Button>
       {r.status === 'PENDING' && (
         <>
-          <Button size="sm" variant="success" icon={Check} onClick={() => setApproveConfirm(r.id)}>
+          <Button size="sm" variant="success" icon={Check} onClick={() => setApproveConfirm(r)}>
             {t('approve')}
           </Button>
           <Button size="sm" variant="danger" icon={X} onClick={() => setRejectTarget(r.id)}>
@@ -327,14 +331,21 @@ const AdminRegistrationRequestsModern = () => {
         language={language}
       />
 
-      <ConfirmModal
+      <Modal
         isOpen={!!approveConfirm}
         onClose={() => setApproveConfirm(null)}
-        onConfirm={handleApprove}
         title={t('approveRequestTitle')}
-        message={t('approveRequestMessage')}
-        confirmText={t('approve')}
-      />
+        size="md"
+      >
+        {approveConfirm && (
+          <ApproveRequestModal
+            request={approveConfirm}
+            onApprove={handleApprove}
+            onCancel={() => setApproveConfirm(null)}
+            submitting={actionSubmitting}
+          />
+        )}
+      </Modal>
 
       {rejectTarget && (
         <RejectReasonModal

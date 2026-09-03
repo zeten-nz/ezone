@@ -83,7 +83,7 @@ export const registrationRequestsAPI = {
   getAll:        ()             => registrationRequestsService.getAll(),
   getById:       (id)           => registrationRequestsService.getById(id),
   getPhotoBlob:  (id)           => registrationRequestsService.getPhotoBlob(id),
-  approve:       (id)           => registrationRequestsService.approve(id),
+  approve:       (id, data)     => registrationRequestsService.approve(id, data),
   reject:        (id, notes)    => registrationRequestsService.reject(id, notes),
 };
 
@@ -95,6 +95,7 @@ export const branchAPI = {
   update:    (branchId, data)      => branchesService.update(branchId, data),
   disable:   (branchId)            => branchesService.disable(branchId),
   enable:    (branchId)            => branchesService.enable(branchId),
+  reclassify: (branchId, branchType) => branchesService.reclassify(branchId, branchType),
 };
 
 // ── Brands (EasyGas-synced catalog; admin UI is read-only, but create/update/

@@ -10,8 +10,19 @@
 // active-only — treat "field absent" as active.
 export const isActiveBranch = (branch) => branch?.is_active === undefined || !!branch.is_active;
 
-export const filterBranches = (branches, query, { includeInactive = false } = {}) => {
-  const candidates = includeInactive ? (branches || []) : (branches || []).filter(isActiveBranch);
+// Beta-2: business-type filter. 'ALL' passes everything; 'UNCLASSIFIED'
+// matches branch_type NULL/undefined ("Tayinlanmagan" — a TYPE state,
+// deliberately independent of is_active: an active unclassified branch
+// stays fully selectable); a concrete type matches exactly.
+const matchesType = (branch, type) => {
+  if (!type || type === 'ALL') return true;
+  if (type === 'UNCLASSIFIED') return branch.branch_type === null || branch.branch_type === undefined;
+  return branch.branch_type === type;
+};
+
+export const filterBranches = (branches, query, { includeInactive = false, type = 'ALL' } = {}) => {
+  const candidates = (includeInactive ? (branches || []) : (branches || []).filter(isActiveBranch))
+    .filter((b) => matchesType(b, type));
   const q = String(query || '').trim().toLowerCase();
   if (!q) return candidates;
   return candidates.filter((b) =>

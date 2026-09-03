@@ -3,9 +3,12 @@ import { UploadCloud } from 'lucide-react';
 import Autocomplete from '../UI/Autocomplete';
 import BranchSelect from '../UI/BranchSelect';
 import Button from '../UI/Button';
+import Select from '../UI/Select';
 import { useLanguage } from '../../context/LanguageContext';
 import useAdminProductSearch from '../../hooks/useAdminProductSearch';
 import { inventoryAPI, branchAPI } from '../../services/api';
+import { branchTypeFilterOptions } from '../../config/branchTypes';
+import { filterBranches } from '../../utils/branchSearch';
 
 /**
  * Warehouse admin picks a synced product, uploads a CSV of bare barcodes
@@ -21,6 +24,7 @@ const InventoryImportModal = ({ onImported }) => {
   const [product, setProduct] = useState(null);
   const [file, setFile] = useState(null);
   const [branch, setBranch] = useState(null); // selected branch object, null = unassigned
+  const [branchType, setBranchType] = useState('ALL'); // Beta-2 business-type filter
   const [branches, setBranches] = useState([]);
   const [branchesLoading, setBranchesLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -76,17 +80,37 @@ const InventoryImportModal = ({ onImported }) => {
       />
 
       {/* Searchable branch selector (Beta-1) — ACTIVE branches only for new
-          stock imports (the old native select wrongly offered inactive
-          ones); leaving it empty keeps the import unassigned, exactly as
-          before. */}
-      <BranchSelect
-        label={t('warehouseLabel')}
-        branches={branches}
-        loading={branchesLoading}
-        value={branch}
-        onChange={setBranch}
-        allowUnassigned
-      />
+          stock imports; leaving it empty keeps the import unassigned to any
+          branch, exactly as before. Beta-2 adds the business-type filter,
+          combined with the text search. NOTE the two distinct concepts:
+          the "Tayinlanmagan" TYPE option filters branches whose
+          branch_type is unclassified, while an empty selector means the
+          IMPORT itself gets no branch. */}
+      <div className="grid grid-cols-1 sm:grid-cols-[11rem_1fr] gap-3 items-start">
+        <Select
+          label={t('branchTypeLabel')}
+          value={branchType}
+          onChange={(e) => {
+            const nextType = e.target.value;
+            setBranchType(nextType);
+            // A selection that the new filter would exclude is cleared so the
+            // field never silently holds an invisible choice.
+            if (branch && filterBranches([branch], '', { type: nextType }).length === 0) {
+              setBranch(null);
+            }
+          }}
+          options={branchTypeFilterOptions(t)}
+        />
+        <BranchSelect
+          label={t('warehouseLabel')}
+          branches={branches}
+          loading={branchesLoading}
+          value={branch}
+          onChange={setBranch}
+          typeFilter={branchType}
+          allowUnassigned
+        />
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-2">{t('inventoryCsvFile')}</label>

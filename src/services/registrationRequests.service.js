@@ -19,8 +19,11 @@ export const registrationRequestsService = {
   getPhotoBlob: (id) =>
     client.get(`/registration-requests/${id}/photo`, { responseType: 'blob' }),
 
-  approve: (id) =>
-    client.post(`/registration-requests/${id}/approve`),
+  // Beta-2.1: carries the admin-supplied FINAL managed username and the
+  // confirmed/overridden branch — validated server-side by the one
+  // authoritative classification rule inside the approval transaction.
+  approve: (id, payload = {}) =>
+    client.post(`/registration-requests/${id}/approve`, payload),
 
   reject: (id, notes) =>
     client.post(`/registration-requests/${id}/reject`, { notes }),

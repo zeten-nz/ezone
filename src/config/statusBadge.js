@@ -50,4 +50,12 @@ export const STATUS_BADGE = {
   CATALOG_SYNC_SUCCESS: { variant: 'success', labelKey: 'syncStatusSuccess' },
   CATALOG_SYNC_FAILED:  { variant: 'danger',  labelKey: 'syncStatusFailed' },
   CATALOG_SYNC_RUNNING: { variant: 'warning', labelKey: 'syncStatusRunning' },
+  // Branch business-group classification (branches.branch_type, Beta-2) —
+  // always rendered as TEXT badges (never color-only). UNCLASSIFIED is the
+  // NULL state ("Tayinlanmagan") — a valid business state, independent of
+  // ACTIVE/DISABLED above.
+  BRANCH_TYPE_EASYGAS:       { variant: 'success', labelKey: 'branchTypeEasyGas' },
+  BRANCH_TYPE_STAG_SERVICE:  { variant: 'warning', labelKey: 'branchTypeStagService' },
+  BRANCH_TYPE_OTHER_SERVICE: { variant: 'neutral', labelKey: 'branchTypeOtherService' },
+  BRANCH_TYPE_UNCLASSIFIED:  { variant: 'neutral', labelKey: 'branchTypeUnclassified' },
 };

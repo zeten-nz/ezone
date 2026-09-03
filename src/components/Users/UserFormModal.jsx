@@ -8,6 +8,8 @@ import Button from '../UI/Button';
 import { useLanguage } from '../../context/LanguageContext';
 import { buildCreateUserSchema, buildEditUserSchema } from '../../validation/userSchemas';
 import { branchAPI } from '../../services/api';
+import { parseManagedUsernamePreview } from '../../utils/managedUsernamePreview';
+import { getBranchTypeLabel } from '../../config/branchTypes';
 
 /**
  * Rendered fresh on every open (parent only mounts this while its owning
@@ -40,6 +42,7 @@ const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
@@ -52,6 +55,15 @@ const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
       branch_id: editingUser?.branch_id ?? '',
     },
   });
+
+  // ── Managed-username live preview (Beta-2, presentation only — the
+  // backend independently enforces everything) ──────────────────────────
+  const watchedUsername = watch('username');
+  const watchedBranchId = watch('branch_id');
+  const effectiveUsername = isEditing ? editingUser.username : watchedUsername;
+  const preview = parseManagedUsernamePreview(effectiveUsername);
+  const selectedBranch = branches.find((b) => String(b.id) === String(watchedBranchId)) || null;
+  const previewMismatch = preview.managed && selectedBranch && preview.branchCode !== selectedBranch.code;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -69,11 +81,37 @@ const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
           </div>
         </div>
       ) : (
-        <Input
-          label={t('username')}
-          error={errors.username?.message}
-          {...register('username')}
-        />
+        <>
+          <Input
+            label={t('username')}
+            error={errors.username?.message}
+            {...register('username')}
+          />
+          {/* Concise username-convention helper (Beta-2) — employees created
+              here are always installer EMPLOYEE accounts, so the managed
+              format applies (ADMIN accounts are not created through this
+              form). */}
+          <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-900 space-y-1">
+            <p className="font-medium">{t('usernameFormatHelperTitle')}</p>
+            <p className="font-mono">eg_ali_01_1 · st_ali_10_1 · bs_ali_10_2</p>
+            <p>{t('usernamePrefixLegend')}</p>
+          </div>
+        </>
+      )}
+
+      {/* Live preview (Beta-2, presentation only — backend is authoritative):
+          appears once the username matches the managed pattern; the mismatch
+          hint compares it against the currently selected branch. */}
+      {preview.managed && (
+        <div className={`p-3 rounded-lg border text-xs space-y-0.5 ${previewMismatch ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-neutral-50 border-neutral-200 text-neutral-700'}`}>
+          <p>{t('branchTypeLabel')}: <span className="font-medium">{getBranchTypeLabel(t, preview.branchType)}</span></p>
+          <p>{t('branchCode')}: <span className="font-mono font-medium">{preview.branchCode}</span></p>
+          {previewMismatch && (
+            <p className="font-medium">
+              {t('usernameBranchMismatchHint')} ({preview.branchCode} ≠ {selectedBranch.code})
+            </p>
+          )}
+        </div>
       )}
 
       {!isEditing && (
