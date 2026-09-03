@@ -871,7 +871,7 @@ const translations = {
     // ── Optional cylinder (Beta-3) ──
     optionalLabel: 'Необязательно',
     addCylinderAction: 'Добавить баллон',
-    removeCylinderAction: 'Убрать баллон',
+    removeCylinderAction: 'Удалить баллон',
     cylinderNotAdded: 'Баллон не указан',
     typedCylinderInfo: 'Баллон, введённый вручную',
     // ── Branch business-group classification (Beta-2) ──

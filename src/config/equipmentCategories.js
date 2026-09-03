@@ -33,17 +33,22 @@ export const getEquipmentTypeLabel = (t, type) => t(EQUIPMENT_TYPE_LABEL_KEY[typ
 // brand_name/model carry an existing TYPED (free-text) cylinder through an
 // edit unchanged — the frontend cannot create typed cylinders, but must
 // never destroy one just because the admin edited an unrelated field.
-const emptyRow = (equipment_type) => ({
+const emptyRow = (equipment_type, enabled = true) => ({
   equipment_type,
   brand: '',
   product: null,
   serial_number: '',
   brand_name: null,
   model: null,
-  enabled: equipment_type !== 'CYLINDER', // cylinder starts OFF on a new warranty
+  enabled,
 });
 
-export const EMPTY_EQUIPMENT_ROWS = () => EQUIPMENT_TYPES.map(emptyRow);
+// CREATE template (UX hotfix over the original Beta-3 opt-in default): ALL
+// four slots open enabled — most installations include a cylinder, so the
+// technician sees the normal cylinder fields immediately; the exceptional
+// no-cylinder case deliberately clicks "Tsilindrni olib tashlash" instead
+// of everyone clicking "add" on the common path.
+export const EMPTY_EQUIPMENT_ROWS = () => EQUIPMENT_TYPES.map((type) => emptyRow(type));
 
 /** A cylinder row whose identity is existing typed/manual data rather than a catalog product. */
 export const isTypedCylinderRow = (row) =>
@@ -56,11 +61,14 @@ export const isTypedCylinderRow = (row) =>
 // yields an enabled empty slot the admin can fill. Historical Manual
 // Verification fields stay out of the editable shape (read-only history).
 export const toEditableEquipment = (equipment) => {
-  if (!equipment?.length) return EMPTY_EQUIPMENT_ROWS();
-  const byType = new Map(equipment.map((row) => [row.equipment_type, row]));
+  const byType = new Map((equipment || []).map((row) => [row.equipment_type, row]));
   return EQUIPMENT_TYPES.map((type) => {
     const row = byType.get(type);
-    if (!row) return emptyRow(type);
+    // EDIT deliberately differs from the CREATE template: each slot opens
+    // in its PERSISTED state. No stored CYLINDER row means this warranty
+    // has no cylinder — the slot opens DISABLED; an absent REQUIRED slot
+    // (legacy-partial history) still opens enabled+empty for completion.
+    if (!row) return emptyRow(type, type !== 'CYLINDER');
     return {
       equipment_type: type,
       brand: row.product_brand || '',
