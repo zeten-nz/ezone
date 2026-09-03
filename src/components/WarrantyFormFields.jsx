@@ -22,7 +22,7 @@ import EquipmentSection from './Warranty/EquipmentSection';
 import VehicleNameField from './Warranty/VehicleNameField';
 import VehicleScannerModal from './VehicleScanner/VehicleScannerModal';
 import { EMPTY_EQUIPMENT_ROWS, getEquipmentTypeLabel } from '../config/equipmentCategories';
-import { PHONE_REGEX } from '../config/phone';
+import { SECTION_FIELDS, isEquipmentSectionComplete } from '../utils/warrantyFormValidation';
 
 // ── Blank template used for the create form initial state ──────────────────────
 // Installer/organization fields are gone — a real ERP doesn't re-ask for data
@@ -68,85 +68,15 @@ export const createEmptyWarrantyForm = () => ({
   submission_uuid: crypto.randomUUID(),
 });
 
-// ── Per-section required fields — drives both validation and the section's
-// completion badge, so the two can never disagree with each other.
-// vehicle_plate_number is deliberately excluded — it's optional, and
-// warranty_book_number is excluded too — it's never installer-entered (see
-// EMPTY_WARRANTY_FORM's comment above). `equipment` isn't a scalar field so
-// it's checked separately (see isSectionComplete and validateWarrantyForm
-// below) rather than living in this flat map. ─────────
-const SECTION_FIELDS = {
-  warranty: ['installation_date'],
-  vehicle: ['vehicle_name', 'vehicle_production_year', 'vehicle_vin', 'vehicle_mileage'],
-  owner: ['owner_full_name', 'owner_phone'],
-};
-
-// ── Shared client-side validator ───────────────────────────────────────────────
-// Range checks below mirror ezone-server/routes/warrantyRoutes.js's
-// validators exactly — failing fast here avoids a round trip just to get the
-// same rejection back from the server.
-const MIN_PRODUCTION_YEAR = 1950;
-const MAX_MILEAGE = 4294967295;
-const MIN_INSTALLATION_DATE = new Date('2015-01-01');
-
-export const validateWarrantyForm = (formData, t) => {
-  const errors = {};
-  const requiredFields = Object.values(SECTION_FIELDS).flat();
-  requiredFields.forEach((field) => {
-    if (!formData[field]) errors[field] = t('fieldRequired');
-  });
-
-  // One fuel type for the whole installation — required alongside, not
-  // nested inside, the per-row equipment errors below.
-  if (!formData.fuel_type) errors.fuel_type = t('fieldRequired');
-
-  // +998XXXXXXXXX exactly — mirrors warrantyRoutes' owner_phone rule (added
-  // because EasyGas rejects other shapes; the value is forwarded verbatim in
-  // the warranty payload on approval).
-  if (formData.owner_phone && !errors.owner_phone && !PHONE_REGEX.test(formData.owner_phone)) {
-    errors.owner_phone = t('valPhoneInvalid');
-  }
-
-  if (formData.vehicle_production_year && !errors.vehicle_production_year) {
-    const year = Number(formData.vehicle_production_year);
-    const maxYear = new Date().getFullYear() + 1;
-    if (!Number.isInteger(year) || year < MIN_PRODUCTION_YEAR || year > maxYear) {
-      errors.vehicle_production_year = t('valYearRange');
-    }
-  }
-
-  if (formData.vehicle_mileage && !errors.vehicle_mileage) {
-    const mileage = Number(formData.vehicle_mileage);
-    if (!Number.isInteger(mileage) || mileage < 0 || mileage > MAX_MILEAGE) {
-      errors.vehicle_mileage = t('valMileageRange');
-    }
-  }
-
-  if (formData.installation_date && !errors.installation_date) {
-    const date = new Date(formData.installation_date);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    if (date < MIN_INSTALLATION_DATE || date > tomorrow) {
-      errors.installation_date = t('valInstallationDateRange');
-    }
-  }
-
-  const equipmentErrors = {};
-  (formData.equipment || []).forEach((row) => {
-    if (!row.product) {
-      equipmentErrors[row.equipment_type] = t('valProductRequired');
-    }
-  });
-  if (Object.keys(equipmentErrors).length > 0) {
-    errors.equipment = equipmentErrors;
-  }
-
-  return errors;
-};
+// ── Validation lives in utils/warrantyFormValidation.js (Beta-3: extracted
+// so the rules — incl. optional-cylinder skipping — are unit-testable
+// without JSX). Re-exported here so the three page call sites keep their
+// existing import path.
+export { validateWarrantyForm } from '../utils/warrantyFormValidation';
 
 const isSectionComplete = (formData, section) => {
   if (section === 'equipment') {
-    return !!formData.fuel_type && (formData.equipment || []).every((row) => !!row.product);
+    return isEquipmentSectionComplete(formData);
   }
   return SECTION_FIELDS[section].every((field) => !!formData[field]);
 };

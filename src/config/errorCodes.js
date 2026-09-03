@@ -28,7 +28,7 @@ const ERROR_CODE_MESSAGES = {
   FILE_TOO_LARGE: { uz: "Fayl hajmi juda katta (5 MB dan oshmasligi kerak).", ru: 'Файл слишком большой (не более 5 МБ).' },
   EDIT_WINDOW_EXPIRED: { uz: 'Tahrirlash muddati (24 soat) tugagan.', ru: 'Время редактирования (24 часа) истекло.' },
   INCOMPLETE_PROFILE: { uz: "Profilingizda filial ma'lumotlari yo'q — administratorga murojaat qiling.", ru: 'В вашем профиле не указан филиал — обратитесь к администратору.' },
-  EQUIPMENT_INCOMPLETE: { uz: "Barcha 4 ta jihoz turini tanlashingiz kerak (Redyuktor, Tsilindr, Kontroller, Injektor relsi).", ru: 'Необходимо выбрать все 4 типа оборудования (Редуктор, Цилиндр, Контроллер, Инжекторная рейка).' },
+  EQUIPMENT_INCOMPLETE: { uz: "Redyuktor, kontroller va injektor relsi majburiy (har biri bittadan). Tsilindr ixtiyoriy.", ru: 'Редуктор, контроллер и инжекторная рейка обязательны (по одному). Баллон необязателен.' },
   PRODUCT_INACTIVE: { uz: 'Tanlangan mahsulot endi faol emas.', ru: 'Выбранный продукт больше не активен.' },
   PRODUCT_IN_USE: { uz: "Bu mahsulot mavjud kafolatlarda ishlatilgan va o'chirib bo'lmaydi — uni faolsizlantiring.", ru: 'Этот продукт используется в существующих гарантиях и не может быть удалён — деактивируйте его.' },
   BRAND_NOT_FOUND: { uz: "Tanlangan brend mavjud emas.", ru: 'Выбранный бренд не существует.' },

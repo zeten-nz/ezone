@@ -4,7 +4,7 @@ import StatusBadge from '../UI/StatusBadge';
 import Button from '../UI/Button';
 import AuthenticatedPhoto from '../UI/AuthenticatedPhoto';
 import ClaimUrlQr from './ClaimUrlQr';
-import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
+import { EQUIPMENT_TYPES, getEquipmentTypeLabel } from '../../config/equipmentCategories';
 import { warrantyAPI } from '../../services/api';
 import { easyGasDisplayMode } from '../../utils/easyGasDisplay';
 
@@ -180,11 +180,24 @@ const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz', onAppr
         <div className="border-t border-neutral-100 pt-5">
           <h3 className="text-sm font-semibold text-neutral-900 mb-1">{t('equipmentInfo')}</h3>
           {form.equipment?.length > 0 ? (
+            // Beta-3: always render the 4 canonical slots in stable order
+            // (keyed by equipment_type, never DB row position) — an absent
+            // slot (optional cylinder, or a legacy-partial warranty) shows
+            // "Kiritilmagan" instead of silently disappearing.
             <div className="divide-y divide-neutral-100">
-              {form.equipment.map((item) => (
-                item.verification_status && item.verification_status !== 'AUTO' ? (
+              {EQUIPMENT_TYPES.map((type) => {
+                const item = form.equipment.find((e) => e.equipment_type === type);
+                if (!item) {
+                  return (
+                    <div key={type} className="py-2">
+                      <p className="text-xs text-neutral-500">{getEquipmentTypeLabel(t, type)}</p>
+                      <p className="text-sm text-neutral-400">{t('notProvided')}</p>
+                    </div>
+                  );
+                }
+                return item.verification_status && item.verification_status !== 'AUTO' ? (
                   <ManualVerificationRow
-                    key={item.equipment_type}
+                    key={type}
                     item={item}
                     t={t}
                     language={language}
@@ -194,13 +207,13 @@ const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz', onAppr
                   />
                 ) : (
                   <EquipmentRow
-                    key={item.equipment_type}
-                    label={getEquipmentTypeLabel(t, item.equipment_type)}
-                    productName={item.product_name}
+                    key={type}
+                    label={getEquipmentTypeLabel(t, type)}
+                    productName={item.product_name || [item.brand_name, item.model].filter(Boolean).join(' ')}
                     serial={item.serial_number}
                   />
-                )
-              ))}
+                );
+              })}
             </div>
           ) : form.legacy_equipment ? (
             <div className="divide-y divide-neutral-100">

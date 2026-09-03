@@ -4,25 +4,18 @@
  */
 
 import client from '../api/client';
+import { toWireEquipment } from '../config/equipmentCategories';
 
-// formData.equipment holds the 4 fixed rows as { equipment_type, brand,
-// product (full object from the autocomplete), serial_number } — the API
-// only wants product_id (product_name is always server-derived, never
-// client-submitted, see warrantyService.resolveEquipment on the backend;
-// brand is a client-side search filter only, never sent — the server
-// derives brand from the resolved product_id). formData.fuel_type is
-// already top-level (one fuel type for the whole installation, not per
-// row), so `...data` carries it through unchanged. That shape translation
-// happens here once rather than in every page that submits a warranty form.
-// Manual Verification fields are no longer sent — that workflow is disabled
-// (temporary product decision); the server ignores them either way.
+// formData.equipment holds the 4 canonical display rows; the wire mapping
+// (config/equipmentCategories.toWireEquipment, Beta-3) OMITS a disabled
+// cylinder entirely — a no-cylinder warranty submits exactly 3 equipment
+// objects, never a null-placeholder row — and round-trips existing typed
+// cylinders. product_name stays server-derived; brand is a client-side
+// search filter only. formData.fuel_type is top-level and carried by
+// `...data` unchanged.
 const toWirePayload = (data) => ({
   ...data,
-  equipment: (data.equipment || []).map((e) => ({
-    equipment_type: e.equipment_type,
-    product_id: e.product?.id,
-    serial_number: e.serial_number || null,
-  })),
+  equipment: toWireEquipment(data.equipment),
 });
 
 export const warrantyService = {

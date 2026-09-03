@@ -135,6 +135,12 @@ const translations = {
     branchSearchPlaceholder: "Filial kodi yoki nomi bo'yicha qidiring",
     branchSearchOptionalPlaceholder: "Filial (ixtiyoriy) — kodi yoki nomi bo'yicha qidiring",
     noBranchesFound: 'Filial topilmadi',
+    // ── Optional cylinder (Beta-3) ──
+    optionalLabel: 'Ixtiyoriy',
+    addCylinderAction: "Tsilindr qo'shish",
+    removeCylinderAction: 'Tsilindrni olib tashlash',
+    cylinderNotAdded: 'Tsilindr kiritilmagan',
+    typedCylinderInfo: "Qo'lda kiritilgan tsilindr",
     // ── Branch business-group classification (Beta-2) ──
     branchTypeLabel: 'Servis turi',
     branchTypeFilterAll: 'Barchasi',
@@ -862,6 +868,12 @@ const translations = {
     branchSearchPlaceholder: 'Поиск по коду или названию филиала',
     branchSearchOptionalPlaceholder: 'Филиал (необязательно) — поиск по коду или названию',
     noBranchesFound: 'Филиал не найден',
+    // ── Optional cylinder (Beta-3) ──
+    optionalLabel: 'Необязательно',
+    addCylinderAction: 'Добавить баллон',
+    removeCylinderAction: 'Убрать баллон',
+    cylinderNotAdded: 'Баллон не указан',
+    typedCylinderInfo: 'Баллон, введённый вручную',
     // ── Branch business-group classification (Beta-2) ──
     branchTypeLabel: 'Тип сервиса',
     branchTypeFilterAll: 'Все',

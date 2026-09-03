@@ -1,10 +1,12 @@
+import { Plus } from 'lucide-react';
 import Select from '../UI/Select';
 import Autocomplete from '../UI/Autocomplete';
 import Input from '../UI/Input';
+import Button from '../UI/Button';
 import useProductSearch from '../../hooks/useProductSearch';
 import useBrandOptions from '../../hooks/useBrandOptions';
 import { useLanguage } from '../../context/LanguageContext';
-import { getEquipmentTypeLabel } from '../../config/equipmentCategories';
+import { getEquipmentTypeLabel, isTypedCylinderRow } from '../../config/equipmentCategories';
 
 const fuelTypeOptions = (t) => [
   { value: '', label: t('selectOption') },
@@ -27,6 +29,7 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
   const { t } = useLanguage();
   const { brands, loading: brandsLoading } = useBrandOptions(row.equipment_type);
   const { query, setQuery, results, loading } = useProductSearch(row.equipment_type, row.brand, fuelType);
+  const isCylinder = row.equipment_type === 'CYLINDER';
 
   const brandOptions = [
     { value: '', label: brandsLoading ? t('loadingResults') : t('selectOption') },
@@ -42,9 +45,12 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
   };
 
   const handleSelectProduct = (product) => {
+    // Picking a catalog product replaces any existing typed-cylinder identity.
     onChange({
       ...row,
       product: { id: product.id, name: `${product.brand} ${product.model || ''}`.trim() },
+      brand_name: null,
+      model: null,
     });
   };
 
@@ -53,9 +59,55 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
     if (row.product) onChange({ ...row, product: null });
   };
 
+  // ── Optional cylinder, OFF state (Beta-3): a quiet dashed card with an
+  // explicit add action — no validation errors, nothing submitted. ──
+  if (isCylinder && row.enabled === false) {
+    return (
+      <div className="p-4 rounded-lg border border-dashed border-neutral-300 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-neutral-900">
+            {getEquipmentTypeLabel(t, row.equipment_type)}
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500">{t('optionalLabel')}</span>
+          </p>
+          <p className="text-xs text-neutral-500 mt-0.5">{t('cylinderNotAdded')}</p>
+        </div>
+        <Button type="button" size="sm" variant="outline" icon={Plus} onClick={() => onChange({ ...row, enabled: true })}>
+          {t('addCylinderAction')}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 rounded-lg border border-neutral-200 space-y-4">
-      <p className="text-sm font-semibold text-neutral-900">{getEquipmentTypeLabel(t, row.equipment_type)}</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-neutral-900">
+          {getEquipmentTypeLabel(t, row.equipment_type)}
+          {isCylinder && (
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500">{t('optionalLabel')}</span>
+          )}
+        </p>
+        {isCylinder && (
+          // Removal intent is explicit: turning the cylinder OFF clears any
+          // entered/typed data immediately (re-enabling starts fresh), and
+          // saving the form then deletes the stored row server-side.
+          <button
+            type="button"
+            onClick={() => onChange({ ...row, enabled: false, product: null, serial_number: '', brand: '', brand_name: null, model: null })}
+            className="text-xs text-neutral-500 hover:text-red-600 underline underline-offset-2 flex-shrink-0"
+          >
+            {t('removeCylinderAction')}
+          </button>
+        )}
+      </div>
+      {isTypedCylinderRow(row) && (
+        // An existing typed/manual cylinder round-trips unchanged — shown
+        // here so the admin knows what is kept; picking a catalog product
+        // replaces it, removing the cylinder deletes it.
+        <p className="text-xs text-neutral-500 -mt-2">
+          {t('typedCylinderInfo')}: <span className="font-medium text-neutral-700">{[row.brand_name, row.model].filter(Boolean).join(' ')}</span>
+        </p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
         <Select
           label={t('brand')}

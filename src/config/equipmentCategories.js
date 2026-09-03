@@ -1,9 +1,15 @@
 /**
- * The warranty form's 4 fixed equipment slots — mirrors
- * ezone-server/config/equipmentCategories.js. Order here is the order the
- * rows render in.
+ * The warranty form's canonical equipment slots. Beta-3: CYLINDER is
+ * OPTIONAL — REDUCER/CONTROLLER/INJECTOR_RAIL stay required. The form
+ * always renders the 4 canonical display slots in this stable order (keyed
+ * by equipment_type, never by DB result position), but the CYLINDER slot
+ * carries an explicit `enabled` state: OFF means "no cylinder" and the row
+ * is omitted from the API payload entirely — never sent as a
+ * null-placeholder object (the EasyGas adapter, server-side, converts
+ * absence into the partner's null-cylinder contract).
  */
 export const EQUIPMENT_TYPES = ['REDUCER', 'CYLINDER', 'CONTROLLER', 'INJECTOR_RAIL'];
+export const REQUIRED_EQUIPMENT_TYPES = ['REDUCER', 'CONTROLLER', 'INJECTOR_RAIL'];
 
 const EQUIPMENT_TYPE_LABEL_KEY = {
   REDUCER: 'reducer',
@@ -24,27 +30,59 @@ export const getEquipmentTypeLabel = (t, type) => t(EQUIPMENT_TYPE_LABEL_KEY[typ
 // longer validated against the local inventory/barcode system and the
 // Manual Verification fields are gone from the active form. It is still
 // required server-side for catalog products and sent to EasyGas.
-export const EMPTY_EQUIPMENT_ROWS = () =>
-  EQUIPMENT_TYPES.map((equipment_type) => ({
-    equipment_type,
-    brand: '',
-    product: null,
-    serial_number: '',
-  }));
+// brand_name/model carry an existing TYPED (free-text) cylinder through an
+// edit unchanged — the frontend cannot create typed cylinders, but must
+// never destroy one just because the admin edited an unrelated field.
+const emptyRow = (equipment_type) => ({
+  equipment_type,
+  brand: '',
+  product: null,
+  serial_number: '',
+  brand_name: null,
+  model: null,
+  enabled: equipment_type !== 'CYLINDER', // cylinder starts OFF on a new warranty
+});
 
-// Converts the DTO's raw equipment rows ({product_id, product_name,
-// product_brand, ...}) into the form's editable shape — shared by every
-// "open an existing warranty for edit" call site so this mapping only
-// lives in one place. Historical Manual Verification fields
-// (verification_status, seller info, photo) are deliberately NOT loaded
-// into the editable shape — they are read-only history now, preserved
-// server-side for unchanged rows and shown in the detail modal.
+export const EMPTY_EQUIPMENT_ROWS = () => EQUIPMENT_TYPES.map(emptyRow);
+
+/** A cylinder row whose identity is existing typed/manual data rather than a catalog product. */
+export const isTypedCylinderRow = (row) =>
+  row.equipment_type === 'CYLINDER' && !row.product && !!(row.brand_name || row.model);
+
+// Converts the DTO's raw equipment rows into the form's editable shape —
+// DETERMINISTICALLY normalized onto the 4 canonical display slots keyed by
+// equipment_type (never positional): a 3-row no-cylinder warranty yields a
+// DISABLED cylinder slot; an absent REQUIRED slot (legacy-partial history)
+// yields an enabled empty slot the admin can fill. Historical Manual
+// Verification fields stay out of the editable shape (read-only history).
 export const toEditableEquipment = (equipment) => {
   if (!equipment?.length) return EMPTY_EQUIPMENT_ROWS();
-  return equipment.map((row) => ({
-    equipment_type: row.equipment_type,
-    brand: row.product_brand || '',
-    product: row.product_id ? { id: row.product_id, name: row.product_name } : null,
-    serial_number: row.serial_number || '',
-  }));
+  const byType = new Map(equipment.map((row) => [row.equipment_type, row]));
+  return EQUIPMENT_TYPES.map((type) => {
+    const row = byType.get(type);
+    if (!row) return emptyRow(type);
+    return {
+      equipment_type: type,
+      brand: row.product_brand || '',
+      product: row.product_id ? { id: row.product_id, name: row.product_name } : null,
+      serial_number: row.serial_number || '',
+      brand_name: row.brand_name || null,
+      model: row.model || null,
+      enabled: true, // a stored row (incl. an existing cylinder) opens enabled
+    };
+  });
 };
+
+// The LOCAL API equipment payload: disabled rows (cylinder OFF) are OMITTED
+// entirely — the domain payload reflects absence honestly. A kept typed
+// cylinder round-trips its brand_name/model; everything else sends its
+// catalog product id.
+export const toWireEquipment = (equipment) => (equipment || [])
+  .filter((row) => row.enabled !== false)
+  .map((row) => {
+    const base = { equipment_type: row.equipment_type, serial_number: row.serial_number || null };
+    if (isTypedCylinderRow(row)) {
+      return { ...base, product_id: null, brand_name: row.brand_name, model: row.model };
+    }
+    return { ...base, product_id: row.product?.id };
+  });
