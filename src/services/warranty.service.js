@@ -61,6 +61,13 @@ export const warrantyService = {
   search: (search, filterType) =>
     client.get('/warranty/search', { params: { search, filterType } }),
 
+  // Authenticated customer lookup by phone (Beta-1) — any authenticated
+  // role, cross-installer by design (a returning customer may visit a
+  // different technician/branch). Returns the SAFE allowlisted lookup
+  // shape, never the full admin DTO.
+  lookupByPhone: (phone) =>
+    client.get('/warranty/lookup', { params: { phone } }),
+
   // ── Manual Verification review (HISTORICAL-ONLY) ────────────────────────
   // The active workflow can no longer produce a PENDING row (Manual
   // Verification is disabled), but warranties submitted under the old flow

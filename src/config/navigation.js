@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Users, FilePlus2, History, UserCog, ClipboardList, Building2, Package, Boxes, BarChart3, Coins, Award, Warehouse, TrendingUp, Tag, Car, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, FilePlus2, History, UserCog, ClipboardList, Building2, Package, Boxes, BarChart3, Coins, Award, Warehouse, TrendingUp, Tag, Car, RefreshCw, UserSearch } from 'lucide-react';
 import { USER_ROLES } from './constants';
 
 /**
@@ -28,6 +28,7 @@ export const ADMIN_NAV_ITEMS = [
 export const EMPLOYEE_NAV_ITEMS = [
   { labelKey: 'warrantyForm', path: '/warranty-form', icon: FilePlus2 },
   { labelKey: 'navWarrantyHistory', path: '/warranty-history', icon: History },
+  { labelKey: 'customerLookup', path: '/customer-lookup', icon: UserSearch },
   { labelKey: 'myPoints', path: '/my-points', icon: Award },
   { labelKey: 'myStatistics', path: '/my-statistics', icon: TrendingUp },
   { labelKey: 'profile', path: '/profile', icon: UserCog },

@@ -119,6 +119,22 @@ const translations = {
     openWarrantyLink: 'Havolani ochish',
     easyGasSyncFailedInstaller: 'EasyGas kafolatini yaratishda xatolik yuz berdi',
     easyGasSyncErrorLabel: 'Xatolik tafsiloti',
+    // ── Customer lookup (Mijozni topish, Beta-1) ──
+    customerLookup: 'Mijozni topish',
+    customerLookupDesc: "Mijoz telefon raqami orqali o'rnatilgan uskunalarni va kafolatlarni toping",
+    searchAction: 'Qidirish',
+    noCustomerFound: 'Mijoz topilmadi',
+    noCustomerFoundDesc: "Bu raqam bo'yicha kafolat topilmadi. Raqamni tekshirib, qayta urinib ko'ring.",
+    lookupFailed: 'Qidirishda xatolik yuz berdi',
+    installedEquipment: "O'rnatilgan uskunalar",
+    installerLabel: 'Usta',
+    branchLabel: 'Filial',
+    serialLabel: 'Seriya',
+    notProvided: 'Kiritilmagan',
+    // ── Searchable branch selector (Beta-1) ──
+    branchSearchPlaceholder: "Filial kodi yoki nomi bo'yicha qidiring",
+    branchSearchOptionalPlaceholder: "Filial (ixtiyoriy) — kodi yoki nomi bo'yicha qidiring",
+    noBranchesFound: 'Filial topilmadi',
     easyGasInconsistentState: 'EasyGas holati nomuvofiq: sinxronizatsiya muvaffaqiyatli deb belgilangan, biroq kafolat havolasi mavjud emas.',
     // EasyGas /verify lookup (admin catalog sync page) — requires one of
     // phone/vin/serial, entered explicitly by the admin
@@ -811,6 +827,22 @@ const translations = {
     openWarrantyLink: 'Открыть ссылку',
     easyGasSyncFailedInstaller: 'Произошла ошибка при создании гарантии EasyGas',
     easyGasSyncErrorLabel: 'Детали ошибки',
+    // ── Customer lookup (Поиск клиента, Beta-1) ──
+    customerLookup: 'Поиск клиента',
+    customerLookupDesc: 'Найдите установленное оборудование и гарантии по номеру телефона клиента',
+    searchAction: 'Поиск',
+    noCustomerFound: 'Клиент не найден',
+    noCustomerFoundDesc: 'По этому номеру гарантий не найдено. Проверьте номер и попробуйте снова.',
+    lookupFailed: 'Ошибка при поиске',
+    installedEquipment: 'Установленное оборудование',
+    installerLabel: 'Мастер',
+    branchLabel: 'Филиал',
+    serialLabel: 'Серия',
+    notProvided: 'Не указано',
+    // ── Searchable branch selector (Beta-1) ──
+    branchSearchPlaceholder: 'Поиск по коду или названию филиала',
+    branchSearchOptionalPlaceholder: 'Филиал (необязательно) — поиск по коду или названию',
+    noBranchesFound: 'Филиал не найден',
     easyGasInconsistentState: 'Несогласованное состояние EasyGas: синхронизация помечена как успешная, но ссылка на гарантию отсутствует.',
     // EasyGas /verify lookup (admin catalog sync page) — requires one of
     // phone/vin/serial, entered explicitly by the admin

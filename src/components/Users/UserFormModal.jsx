@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../UI/Input';
-import Select from '../UI/Select';
+import BranchSelect from '../UI/BranchSelect';
 import PhoneInput from '../UI/PhoneInput';
 import Button from '../UI/Button';
 import { useLanguage } from '../../context/LanguageContext';
@@ -31,13 +31,6 @@ const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
     })();
   }, []);
 
-  const branchOptions = useMemo(
-    () => [
-      { value: '', label: t('selectPlaceholder') },
-      ...branches.map((b) => ({ value: b.id, label: `${b.name} (${b.code})` })),
-    ],
-    [t, branches]
-  );
   const schema = useMemo(
     () => (isEditing ? buildEditUserSchema(t) : buildCreateUserSchema(t)),
     [isEditing, t]
@@ -106,7 +99,19 @@ const UserFormModal = ({ editingUser, onSubmit, onCancel }) => {
         name="branch_id"
         control={control}
         render={({ field }) => (
-          <Select label={t('branchCode')} options={branchOptions} error={errors.branch_id?.message} {...field} />
+          // Searchable selector (Beta-1). includeInactive: a user may already
+          // be assigned to a deactivated branch — the previous select offered
+          // every branch, and hiding inactive ones here would silently break
+          // editing such users. RHF keeps storing the bare branch_id.
+          <BranchSelect
+            label={t('branchCode')}
+            branches={branches}
+            includeInactive
+            allowUnassigned
+            value={branches.find((b) => String(b.id) === String(field.value)) || null}
+            onChange={(b) => field.onChange(b ? b.id : '')}
+            error={errors.branch_id?.message}
+          />
         )}
       />
 

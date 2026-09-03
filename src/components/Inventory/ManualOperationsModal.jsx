@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import BranchSelect from '../UI/BranchSelect';
 import Button from '../UI/Button';
 import Input from '../UI/Input';
 import Select from '../UI/Select';
@@ -19,7 +20,12 @@ const ManualOperationsModal = ({ item, mode, branches, onClose, onSuccess }) => 
   const { t } = useLanguage();
   const [reason, setReason] = useState('');
   const [toStatus, setToStatus] = useState('');
-  const [branchId, setBranchId] = useState(item?.branch_id ? String(item.branch_id) : '');
+  // Selected branch OBJECT (null = unassign) — pre-resolved from the item's
+  // current branch_id so the transfer form opens showing the current
+  // warehouse, exactly as the old select did.
+  const [branch, setBranch] = useState(
+    () => branches.find((b) => String(b.id) === String(item?.branch_id)) || null
+  );
   const [newBarcode, setNewBarcode] = useState('');
   const [canonicalItemId, setCanonicalItemId] = useState('');
   const [candidates, setCandidates] = useState([]);
@@ -51,7 +57,7 @@ const ManualOperationsModal = ({ item, mode, branches, onClose, onSuccess }) => 
       if (mode === 'status') {
         await inventoryAPI.changeStatus(item.id, item.status, toStatus, reason);
       } else if (mode === 'branch') {
-        await inventoryAPI.transferBranch(item.id, branchId || null, reason);
+        await inventoryAPI.transferBranch(item.id, branch ? branch.id : null, reason);
       } else if (mode === 'barcode') {
         await inventoryAPI.correctBarcode(item.id, newBarcode, reason);
       } else if (mode === 'merge') {
@@ -91,14 +97,15 @@ const ManualOperationsModal = ({ item, mode, branches, onClose, onSuccess }) => 
       )}
 
       {mode === 'branch' && (
-        <Select
+        // Searchable selector (Beta-1) — a TRANSFER is a new assignment, so
+        // only ACTIVE branches are offered as targets; clearing the field
+        // keeps the existing "unassign" (null) semantics.
+        <BranchSelect
           label={t('warehouseLabel')}
-          value={branchId}
-          onChange={(e) => setBranchId(e.target.value)}
-          options={[
-            { value: '', label: t('unassignedWarehouse') },
-            ...branches.map((b) => ({ value: String(b.id), label: b.name })),
-          ]}
+          branches={branches}
+          value={branch}
+          onChange={setBranch}
+          allowUnassigned
         />
       )}
 

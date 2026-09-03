@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { UploadCloud } from 'lucide-react';
 import Autocomplete from '../UI/Autocomplete';
+import BranchSelect from '../UI/BranchSelect';
 import Button from '../UI/Button';
-import Select from '../UI/Select';
 import { useLanguage } from '../../context/LanguageContext';
 import useAdminProductSearch from '../../hooks/useAdminProductSearch';
 import { inventoryAPI, branchAPI } from '../../services/api';
@@ -20,15 +20,19 @@ const InventoryImportModal = ({ onImported }) => {
   const [query, setQuery] = useState('');
   const [product, setProduct] = useState(null);
   const [file, setFile] = useState(null);
-  const [branchId, setBranchId] = useState('');
+  const [branch, setBranch] = useState(null); // selected branch object, null = unassigned
   const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const { results, loading: searching } = useAdminProductSearch(query);
 
   useEffect(() => {
-    branchAPI.getAll().then((response) => setBranches(response.data)).catch(() => setBranches([]));
+    branchAPI.getAll()
+      .then((response) => setBranches(response.data))
+      .catch(() => setBranches([]))
+      .finally(() => setBranchesLoading(false));
   }, []);
 
   const handleSelectProduct = (p) => {
@@ -48,7 +52,7 @@ const InventoryImportModal = ({ onImported }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await inventoryAPI.importCsv(product.id, file, branchId || undefined);
+      const response = await inventoryAPI.importCsv(product.id, file, branch?.id || undefined);
       setResult(response.data);
       onImported?.();
     } catch (err) {
@@ -71,14 +75,17 @@ const InventoryImportModal = ({ onImported }) => {
         getOptionLabel={(p) => `${p.brand} ${p.model || ''}`.trim()}
       />
 
-      <Select
+      {/* Searchable branch selector (Beta-1) — ACTIVE branches only for new
+          stock imports (the old native select wrongly offered inactive
+          ones); leaving it empty keeps the import unassigned, exactly as
+          before. */}
+      <BranchSelect
         label={t('warehouseLabel')}
-        value={branchId}
-        onChange={(e) => setBranchId(e.target.value)}
-        options={[
-          { value: '', label: t('unassignedWarehouse') },
-          ...branches.map((b) => ({ value: String(b.id), label: b.name })),
-        ]}
+        branches={branches}
+        loading={branchesLoading}
+        value={branch}
+        onChange={setBranch}
+        allowUnassigned
       />
 
       <div>

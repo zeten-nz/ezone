@@ -33,6 +33,7 @@ const Login                         = lazy(() => import('./pages/Login'));
 const Register                      = lazy(() => import('./pages/Register'));
 const EmployeeWarrantyFormModern    = lazy(() => import('./pages/EmployeeWarrantyFormModern'));
 const EmployeeWarrantyHistoryModern = lazy(() => import('./pages/EmployeeWarrantyHistoryModern'));
+const CustomerLookupModern          = lazy(() => import('./pages/CustomerLookupModern'));
 const EmployeeProfileModern         = lazy(() => import('./pages/EmployeeProfileModern'));
 const AdminDashboardModern          = lazy(() => import('./pages/AdminDashboardModern'));
 const AdminUsersModern              = lazy(() => import('./pages/AdminUsersModern'));
@@ -115,6 +116,14 @@ function App() {
                       element={
                         <ErrorBoundary name="WarrantyHistoryBoundary" inline>
                           <EmployeeWarrantyHistoryModern />
+                        </ErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/customer-lookup"
+                      element={
+                        <ErrorBoundary name="CustomerLookupBoundary" inline>
+                          <CustomerLookupModern />
                         </ErrorBoundary>
                       }
                     />
