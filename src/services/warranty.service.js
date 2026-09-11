@@ -61,6 +61,14 @@ export const warrantyService = {
   lookupByPhone: (phone) =>
     client.get('/warranty/lookup', { params: { phone } }),
 
+  // Customer lookup by scanned EasyGas QR — the decoded value goes to OUR
+  // backend as an opaque string for an exact match against the stored
+  // claim URL (POST body, never a query string); the browser NEVER
+  // navigates to or fetches the scanned value itself. Same safe lookup
+  // response shape as lookupByPhone.
+  lookupByQr: (qrValue) =>
+    client.post('/warranty/lookup/qr', { qr_value: qrValue }),
+
   // ── Manual Verification review (HISTORICAL-ONLY) ────────────────────────
   // The active workflow can no longer produce a PENDING row (Manual
   // Verification is disabled), but warranties submitted under the old flow

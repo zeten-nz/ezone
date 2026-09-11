@@ -6,6 +6,8 @@ import { warrantyAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import Button from '../components/UI/Button';
 import Toast from '../components/UI/Toast';
+import { Card, CardContent } from '../components/UI/Card';
+import ClaimUrlQr from '../components/Warranty/ClaimUrlQr';
 import WarrantyFormFields, {
   createEmptyWarrantyForm,
   validateWarrantyForm,
@@ -15,7 +17,11 @@ const EmployeeWarrantyFormModern = () => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
-  const [submitted, setSubmitted] = useState(false);
+  // The created-warranty result returned by the backend (number, fuel type,
+  // EasyGas outcome + claim_url) — truthy = success screen. No auto-close
+  // timer: the installer needs time to show the QR to the customer, so the
+  // screen stays until an explicit "Yopish".
+  const [submittedWarranty, setSubmittedWarranty] = useState(null);
   const [errors, setErrors] = useState({});
   const [scannerOpen, setScannerOpen] = useState(false);
   // Lazy initializer — createEmptyWarrantyForm() mints a fresh
@@ -40,13 +46,9 @@ const EmployeeWarrantyFormModern = () => {
 
     setLoading(true);
     try {
-      await warrantyAPI.createForm(formData);
-      setToast({ type: 'success', message: t('formSubmitted') });
-      setSubmitted(true);
-      setTimeout(() => {
-        setFormData(createEmptyWarrantyForm());
-        setSubmitted(false);
-      }, 2000);
+      const response = await warrantyAPI.createForm(formData);
+      setToast(null);
+      setSubmittedWarranty(response.data);
     } catch (err) {
       // err.message is already the correctly translated, user-facing text
       // for this errorCode (see src/api/client.js's response interceptor,
@@ -59,26 +61,78 @@ const EmployeeWarrantyFormModern = () => {
     }
   };
 
-  if (submitted) {
+  // Explicit close — the ONLY way off the success screen. Resets to a
+  // completely fresh form: createEmptyWarrantyForm() mints a NEW
+  // submission_uuid (the previous one must never be reused — it would make
+  // the next warranty an idempotent replay of this one), and every piece of
+  // per-warranty UI state is cleared.
+  const handleCloseSuccess = () => {
+    setFormData(createEmptyWarrantyForm());
+    setSubmittedWarranty(null);
+    setErrors({});
+    setToast(null);
+    setScannerOpen(false);
+  };
+
+  if (submittedWarranty) {
     return (
       <ModernEmployeeLayout>
-        <div className="flex items-center justify-center min-h-[28rem]">
+        <div className="flex items-start justify-center py-6 sm:py-10">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="text-center space-y-4"
+            className="w-full max-w-md"
           >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.35, delay: 0.1, type: 'spring', stiffness: 200 }}
-              className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto"
-            >
-              <CheckCircle2 className="w-9 h-9 text-green-600" />
-            </motion.div>
-            <h2 className="text-2xl font-semibold text-neutral-900">{t('formSubmitted')}</h2>
-            <p className="text-neutral-500">{t('successFormDesc')}</p>
+            <Card>
+              <CardContent className="p-6 space-y-5 text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.35, delay: 0.1, type: 'spring', stiffness: 200 }}
+                  className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto"
+                >
+                  <CheckCircle2 className="w-9 h-9 text-green-600" />
+                </motion.div>
+                <div>
+                  <h2 className="text-2xl font-semibold text-neutral-900">{t('formSubmitted')}</h2>
+                  <p className="text-neutral-500 mt-1">{t('successFormDesc')}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-left">
+                  <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-100">
+                    <p className="text-xs text-neutral-500">{t('warrantyBookNumber')}</p>
+                    <p className="text-sm font-mono font-semibold text-neutral-900 mt-0.5 break-all">
+                      {submittedWarranty.warranty_book_number || '—'}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-100">
+                    <p className="text-xs text-neutral-500">{t('fuelType')}</p>
+                    <p className="text-sm font-semibold text-neutral-900 mt-0.5">{submittedWarranty.fuel_type || '—'}</p>
+                  </div>
+                </div>
+
+                {submittedWarranty.easygas_claim_url ? (
+                  <div className="pt-1 space-y-3">
+                    <p className="text-sm font-semibold text-neutral-900">{t('warrantyQrTitle')}</p>
+                    {/* Reuses the ONE QR presentation — encodes EXACTLY the
+                        claim URL the backend returned/stored. */}
+                    <ClaimUrlQr claimUrl={submittedWarranty.easygas_claim_url} size={192} />
+                  </div>
+                ) : (
+                  // EasyGas failed or the QR isn't available — the LOCAL
+                  // warranty is still saved. A calm localized notice, never
+                  // raw API/internal error text.
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm text-amber-800">{t('warrantySavedNoQr')}</p>
+                  </div>
+                )}
+
+                <Button onClick={handleCloseSuccess} className="w-full">
+                  {t('close')}
+                </Button>
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
       </ModernEmployeeLayout>

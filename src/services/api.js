@@ -59,6 +59,7 @@ export const warrantyAPI = {
   deleteForm:    (formId)                   => warrantyService.delete(formId),
   searchForms:   (search, filterType)       => warrantyService.search(search, filterType),
   lookupByPhone: (phone)                    => warrantyService.lookupByPhone(phone),
+  lookupByQr:    (qrValue)                  => warrantyService.lookupByQr(qrValue),
   approveVerification:    (equipmentId, notes) => warrantyService.approveVerification(equipmentId, notes),
   rejectVerification:     (equipmentId, notes) => warrantyService.rejectVerification(equipmentId, notes),
   approveForm:            (formId, notes)       => warrantyService.approveForm(formId, notes),
