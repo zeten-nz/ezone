@@ -1,5 +1,6 @@
 // Explicit .js extension so this pure module also loads under raw `node
 // --test` (Vite resolves it identically).
+import { getSerialNumbers } from './equipmentSerials.js';
 import { EQUIPMENT_TYPES } from '../config/equipmentCategories.js';
 
 /**
@@ -29,6 +30,7 @@ export const equipmentSlots = (item) =>
         type,
         product: row.product_name || typedLabel || null,
         serial: row.serial_number || null,
+        serials: getSerialNumbers(row),
       };
     }
     const legacy = item?.legacy_equipment;

@@ -1,7 +1,8 @@
 import { Plus } from 'lucide-react';
 import Select from '../UI/Select';
 import Autocomplete from '../UI/Autocomplete';
-import Input from '../UI/Input';
+import SerialInputs from './SerialInputs';
+import { editableSerialNumbers } from '../../utils/equipmentSerials';
 import Button from '../UI/Button';
 import useProductSearch from '../../hooks/useProductSearch';
 import useBrandOptions from '../../hooks/useBrandOptions';
@@ -30,6 +31,7 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
   const { brands, loading: brandsLoading } = useBrandOptions(row.equipment_type);
   const { query, setQuery, results, loading } = useProductSearch(row.equipment_type, row.brand, fuelType);
   const isCylinder = row.equipment_type === 'CYLINDER';
+  const serials = editableSerialNumbers(row);
 
   const brandOptions = [
     { value: '', label: brandsLoading ? t('loadingResults') : t('selectOption') },
@@ -82,7 +84,7 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
     <div className="p-4 rounded-lg border border-neutral-200 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-neutral-900">
-          {getEquipmentTypeLabel(t, row.equipment_type)}
+          {getEquipmentTypeLabel(t, row.equipment_type)} · {t('serialUnitCount').replace('{count}', serials.length)}
           {isCylinder && (
             <span className="ml-2 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500">{t('optionalLabel')}</span>
           )}
@@ -93,7 +95,7 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
           // saving the form then deletes the stored row server-side.
           <button
             type="button"
-            onClick={() => onChange({ ...row, enabled: false, product: null, serial_number: '', brand: '', brand_name: null, model: null })}
+            onClick={() => onChange({ ...row, enabled: false, product: null, serial_numbers: [''], brand: '', brand_name: null, model: null })}
             className="text-xs text-neutral-500 hover:text-red-600 underline underline-offset-2 flex-shrink-0"
           >
             {t('removeCylinderAction')}
@@ -108,7 +110,7 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
           {t('typedCylinderInfo')}: <span className="font-medium text-neutral-700">{[row.brand_name, row.model].filter(Boolean).join(' ')}</span>
         </p>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         <Select
           label={t('brand')}
           value={row.brand}
@@ -127,14 +129,10 @@ const EquipmentRow = ({ row, fuelType, onChange, error }) => {
           error={error}
           disabled={!row.brand}
         />
-        <Input
-          label={t('serialVinNumber')}
-          placeholder={row.product ? t('barcodeScanOrType') : t('selectProductFirst')}
-          value={row.serial_number}
-          onChange={(e) => onChange({ ...row, serial_number: e.target.value })}
-          disabled={!row.product}
-        />
+
       </div>
+      <SerialInputs type={row.equipment_type} serials={serials} disabled={!row.product && !isTypedCylinderRow(row)}
+        onChange={(serial_numbers) => onChange({ ...row, serial_numbers })} />
     </div>
   );
 };

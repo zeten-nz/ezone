@@ -74,6 +74,7 @@ export const dashboardAPI = {
 
 // ── Excel export ──────────────────────────────────────────────────────────────
 export const exportAPI = {
+  clientWarranty: (employeeId, search, verificationStatus) => exportService.clientWarranty(employeeId, search, verificationStatus),
   exportWarrantyForms: (days, lang)               => exportService.allForms(days, lang),
   exportByBranch:      (branch, days, lang)       => exportService.byBranch(branch, days, lang),
   exportEmployeeData:  (employeeId, days, lang)   => exportService.byEmployee(employeeId, days, lang),

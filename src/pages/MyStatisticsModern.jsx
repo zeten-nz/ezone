@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, Package, Coins } from 'lucide-react';
+import { Award, Package } from 'lucide-react';
 import ModernEmployeeLayout from '../components/ModernEmployeeLayout';
 import { reportsAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -30,7 +30,12 @@ const MyStatisticsModern = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    let active = true;
+    reportsAPI.getMyStatistics()
+      .then((response) => { if (active) setData(response.data); })
+      .catch((err) => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   if (loading) {
@@ -63,8 +68,6 @@ const MyStatisticsModern = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <StatTile index={0} label={t('warrantyCount')} value={data.totalWarranties} icon={Award} />
           <StatTile index={1} label={t('totalClaimedInventoryLabel')} value={data.totalClaimedInventory} icon={Package} />
-          <StatTile index={2} label={t('monthlyPoints')} value={data.monthlyPoints} icon={Coins} />
-          <StatTile index={3} label={t('lifetimePoints')} value={data.lifetimePoints} icon={Coins} />
         </div>
 
         <Card>

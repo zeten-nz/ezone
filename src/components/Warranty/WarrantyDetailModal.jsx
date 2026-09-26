@@ -1,3 +1,4 @@
+import SerialList from './SerialList';
 import { Check, X } from 'lucide-react';
 import { Modal } from '../UI/Modal';
 import StatusBadge from '../UI/StatusBadge';
@@ -67,14 +68,15 @@ const Section = ({ title, children }) => (
   </div>
 );
 
-const EquipmentRow = ({ label, fuelType, productName, serial }) => (
+const EquipmentRow = ({ label, fuelType, productName, serial, serials }) => (
   <div className="flex items-start gap-3 py-2">
     {fuelType && (
       <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${FUEL_DOT[fuelType] || 'bg-neutral-300'}`} />
     )}
     <div className="min-w-0">
       <p className="text-xs text-neutral-500">{label}{fuelType ? ` · ${fuelType}` : ''}</p>
-      <p className="text-sm font-medium text-neutral-900 truncate">{productName || '—'} / {serial || '—'}</p>
+      <p className="text-sm font-medium text-neutral-900 break-words">{productName || '—'}</p>
+      <SerialList serial_number={serial} serial_numbers={serials} />
     </div>
   </div>
 );
@@ -211,6 +213,7 @@ const WarrantyDetailModal = ({ isOpen, onClose, form, t, language = 'uz', onAppr
                     label={getEquipmentTypeLabel(t, type)}
                     productName={item.product_name || [item.brand_name, item.model].filter(Boolean).join(' ')}
                     serial={item.serial_number}
+                    serials={item.serial_numbers}
                   />
                 );
               })}

@@ -14,7 +14,7 @@ const base = () => ({
   installation_date: '2026-09-01', fuel_type: 'LPG', vehicle_name: 'Cobalt',
   vehicle_production_year: 2021, vehicle_vin: 'VIN1', vehicle_mileage: 1000,
   owner_full_name: 'O', owner_phone: '+998901234567',
-  equipment: EMPTY_EQUIPMENT_ROWS().map((r) => (r.equipment_type === 'CYLINDER' ? { ...r, enabled: false } : { ...r, product: { id: 1, name: 'X' }, serial_number: 'S' })),
+  equipment: EMPTY_EQUIPMENT_ROWS().map((r) => (r.equipment_type === 'CYLINDER' ? { ...r, enabled: false } : { ...r, product: { id: 1, name: 'X' }, serial_numbers: ['S'] })),
 });
 
 test('UX hotfix: a NEW untouched form (cylinder enabled by default, empty) is still incomplete — normal product validation applies', () => {
@@ -41,7 +41,7 @@ test('the other 3 types remain required', () => {
 test('RESTORING the cylinder ("Tsilindr qo\'shish" after removal) re-activates normal validation on the clean row', () => {
   const form = base();
   form.equipment = form.equipment.map((r) => (r.equipment_type === 'CYLINDER'
-    ? { ...r, enabled: true, product: null, serial_number: '', brand: '', brand_name: null, model: null }
+    ? { ...r, enabled: true, product: null, serial_numbers: [''], brand: '', brand_name: null, model: null }
     : r));
   const errors = validateWarrantyForm(form, t);
   assert.equal(errors.equipment.CYLINDER, 'valProductRequired');
@@ -49,13 +49,13 @@ test('RESTORING the cylinder ("Tsilindr qo\'shish" after removal) re-activates n
 
 test('enabled cylinder with a catalog product passes', () => {
   const form = base();
-  form.equipment = form.equipment.map((r) => (r.equipment_type === 'CYLINDER' ? { ...r, enabled: true, product: { id: 4, name: 'CYL' }, serial_number: 'SC' } : r));
+  form.equipment = form.equipment.map((r) => (r.equipment_type === 'CYLINDER' ? { ...r, enabled: true, product: { id: 4, name: 'CYL' }, serial_numbers: ['SC'] } : r));
   assert.deepEqual(validateWarrantyForm(form, t), {});
 });
 
 test('enabled cylinder carrying existing TYPED identity passes without a catalog product', () => {
   const form = base();
-  form.equipment = form.equipment.map((r) => (r.equipment_type === 'CYLINDER' ? { ...r, enabled: true, brand_name: 'GZWM', model: '60L', serial_number: 'SC' } : r));
+  form.equipment = form.equipment.map((r) => (r.equipment_type === 'CYLINDER' ? { ...r, enabled: true, brand_name: 'GZWM', model: '60L', serial_numbers: ['SC'] } : r));
   assert.deepEqual(validateWarrantyForm(form, t), {});
   assert.equal(isEquipmentSectionComplete(form), true);
 });

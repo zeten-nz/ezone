@@ -1,3 +1,5 @@
+import { getSerialNumbers, serialValidationError } from './equipmentSerials.js';
+import { EQUIPMENT_SERIAL_RULES } from '../config/equipmentSerialRules.js';
 import { PHONE_REGEX } from '../config/phone.js';
 import { isTypedCylinderRow } from '../config/equipmentCategories.js';
 
@@ -26,7 +28,7 @@ const MIN_PRODUCTION_YEAR = 1950;
 const MAX_MILEAGE = 4294967295;
 const MIN_INSTALLATION_DATE = new Date('2015-01-01');
 
-const equipmentRowValid = (row) => row.enabled === false || !!row.product || isTypedCylinderRow(row);
+const equipmentRowValid = (row) => row.enabled === false || ((!!row.product || isTypedCylinderRow(row)) && !serialValidationError(row.equipment_type, getSerialNumbers(row)));
 
 export const validateWarrantyForm = (formData, t) => {
   const errors = {};
@@ -67,9 +69,13 @@ export const validateWarrantyForm = (formData, t) => {
 
   const equipmentErrors = {};
   (formData.equipment || []).forEach((row) => {
-    if (!equipmentRowValid(row)) {
+    if (row.enabled === false) return;
+    if (!row.product && !isTypedCylinderRow(row)) {
       equipmentErrors[row.equipment_type] = t('valProductRequired');
+      return;
     }
+    const error = serialValidationError(row.equipment_type, getSerialNumbers(row));
+    if (error) equipmentErrors[row.equipment_type] = t(error).replace('{max}', EQUIPMENT_SERIAL_RULES[row.equipment_type].max);
   });
   if (Object.keys(equipmentErrors).length > 0) {
     errors.equipment = equipmentErrors;

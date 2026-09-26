@@ -1,3 +1,4 @@
+import SerialList from '../components/Warranty/SerialList';
 import { useState, useRef, useCallback } from 'react';
 import { Search, Car, Wrench, QrCode, Loader2, UserRound } from 'lucide-react';
 import ModernEmployeeLayout from '../components/ModernEmployeeLayout';
@@ -77,7 +78,7 @@ const LookupResultCard = ({ item, t, language, onShowQr }) => (
                 <>
                   <p className="text-sm font-medium text-neutral-900 truncate">{slot.product || t('notProvided')}</p>
                   <p className="text-xs text-neutral-600">
-                    {t('serialLabel')}: {slot.serial ? <span className="font-mono">{slot.serial}</span> : t('notProvided')}
+                    {t('serialLabel')}: {slot.serial ? <SerialList serial_number={slot.serial} serial_numbers={slot.serials} /> : t('notProvided')}
                   </p>
                 </>
               ) : (

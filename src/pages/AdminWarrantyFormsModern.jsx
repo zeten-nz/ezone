@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Car, FileSearch, Download, X, Check } from 'lucide-react';
 import ModernAdminLayout from '../components/ModernAdminLayout';
-import { warrantyAPI, exportCsvAPI } from '../services/api';
+import { warrantyAPI, exportCsvAPI, exportAPI } from '../services/api';
 import { downloadBlob, buildCsvFilename } from '../utils/download';
 import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardHeader } from '../components/UI/Card';
@@ -66,6 +66,21 @@ const AdminWarrantyFormsModern = () => {
   const [formActionSubmitting, setFormActionSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingClient, setExportingClient] = useState(false);
+
+  const handleClientExport = async () => {
+    setExportingClient(true);
+    try {
+      const response = await exportAPI.clientWarranty(
+        employeeId, search, verificationFilter !== 'all' ? verificationFilter : undefined
+      );
+      downloadBlob(response.data, `client_warranty_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    } finally {
+      setExportingClient(false);
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -92,13 +107,13 @@ const AdminWarrantyFormsModern = () => {
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    setError(null);
     void (async () => {
       try {
         const response = await warrantyAPI.getAllForms(
           currentPage, pageSize, search, employeeId,
           verificationFilter !== 'all' ? verificationFilter : undefined
         );
+        setError(null);
         setForms(response.data.data);
         setPagination(response.data.pagination);
       } catch (err) {
@@ -419,9 +434,14 @@ const AdminWarrantyFormsModern = () => {
             <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">{t('warrantyForms')}</h1>
             <p className="text-neutral-500 mt-1.5">{t('adminWarrantySubtitle')}</p>
           </div>
-          <Button variant="outline" icon={Download} loading={exporting} onClick={handleExport}>
-            {exporting ? t('exportingCsv') : t('exportCsvAction')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" icon={Download} loading={exporting} onClick={handleExport}>
+              {exporting ? t('exportingCsv') : t('exportCsvAction')}
+            </Button>
+            <Button variant="outline" icon={Download} loading={exportingClient} onClick={handleClientExport}>
+              {exportingClient ? t('exportingCsv') : t('exportClientWarranty')}
+            </Button>
+          </div>
         </div>
 
         {employeeId && (

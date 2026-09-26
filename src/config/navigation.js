@@ -29,7 +29,6 @@ export const EMPLOYEE_NAV_ITEMS = [
   { labelKey: 'warrantyForm', path: '/warranty-form', icon: FilePlus2 },
   { labelKey: 'navWarrantyHistory', path: '/warranty-history', icon: History },
   { labelKey: 'customerLookup', path: '/customer-lookup', icon: UserSearch },
-  { labelKey: 'myPoints', path: '/my-points', icon: Award },
   { labelKey: 'myStatistics', path: '/my-statistics', icon: TrendingUp },
   { labelKey: 'profile', path: '/profile', icon: UserCog },
 ];

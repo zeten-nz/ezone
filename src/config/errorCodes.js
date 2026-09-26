@@ -12,6 +12,15 @@
  */
 
 const ERROR_CODE_MESSAGES = {
+  SERIAL_ARRAY_REQUIRED: { uz: 'Seriyalar ro‘yxatini kiriting.', ru: 'Укажите список серийных номеров.' },
+  SERIAL_STRING_REQUIRED: { uz: 'Seriya raqami matn bo‘lishi kerak.', ru: 'Серийный номер должен быть строкой.' },
+  SERIAL_EMPTY: { uz: 'Seriya raqami bo‘sh bo‘lishi mumkin emas.', ru: 'Серийный номер не может быть пустым.' },
+  SERIAL_DUPLICATE: { uz: 'Takroriy seriya raqami.', ru: 'Повторяющийся серийный номер.' },
+  SERIAL_TOO_LONG: { uz: 'Seriya raqami juda uzun.', ru: 'Серийный номер слишком длинный.' },
+  SERIAL_COMMA_NOT_ALLOWED: { uz: 'Har bir seriyani alohida kiriting, vergul ishlatmang.', ru: 'Введите каждый номер отдельно, без запятых.' },
+  SERIAL_COUNT_INVALID: { uz: 'Uskuna seriyalari sonini tekshiring.', ru: 'Проверьте количество серийных номеров оборудования.' },
+  SERIAL_STORAGE_TOO_LONG: { uz: 'Seriya ma’lumotlari saqlash hajmidan oshib ketdi.', ru: 'Превышен допустимый объём данных серийных номеров.' },
+  SERIAL_TYPE_INVALID: { uz: 'Uskuna turi noto‘g‘ri.', ru: 'Неверный тип оборудования.' },
   VALIDATION_ERROR: { uz: "Kiritilgan ma'lumotlarni tekshiring.", ru: 'Проверьте введённые данные.' },
   BAD_REQUEST: { uz: "So'rov noto'g'ri. Ma'lumotlarni tekshiring.", ru: 'Некорректный запрос. Проверьте данные.' },
   UNAUTHORIZED: { uz: 'Sessiya muddati tugadi. Iltimos, qayta kiring.', ru: 'Сессия истекла. Пожалуйста, войдите снова.' },

@@ -10,6 +10,9 @@
 import client from '../api/client';
 
 export const exportService = {
+  clientWarranty: (employeeId, search, verificationStatus) =>
+    client.get('/export/client-warranty.xlsx', { params: { employeeId, search, verificationStatus }, responseType: 'blob' }),
+
   allForms: (days = 'all', lang = 'uz') =>
     client.get('/export/warranty', { params: { days, lang }, responseType: 'blob' }),
 

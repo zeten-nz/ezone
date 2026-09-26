@@ -48,7 +48,6 @@ const AdminInventoryModern          = lazy(() => import('./pages/AdminInventoryM
 const AdminReportsModern            = lazy(() => import('./pages/AdminReportsModern'));
 const AdminPointsConfigModern       = lazy(() => import('./pages/AdminPointsConfigModern'));
 const AdminInstallerPointsModern    = lazy(() => import('./pages/AdminInstallerPointsModern'));
-const MyPointsModern                = lazy(() => import('./pages/MyPointsModern'));
 const AdminInstallerStatisticsModern = lazy(() => import('./pages/AdminInstallerStatisticsModern'));
 const AdminProductStatisticsModern  = lazy(() => import('./pages/AdminProductStatisticsModern'));
 const AdminWarehouseStatisticsModern = lazy(() => import('./pages/AdminWarehouseStatisticsModern'));
@@ -135,14 +134,7 @@ function App() {
                         </ErrorBoundary>
                       }
                     />
-                    <Route
-                      path="/my-points"
-                      element={
-                        <ErrorBoundary name="MyPointsBoundary" inline>
-                          <MyPointsModern />
-                        </ErrorBoundary>
-                      }
-                    />
+                    <Route path="/my-points" element={<Navigate to="/warranty-history" replace />} />
                     <Route
                       path="/my-statistics"
                       element={

@@ -7,6 +7,17 @@ export const LanguageContext = createContext();
 
 const translations = {
   uz: {
+    serialNumbers: 'Seriya raqamlari',
+    addSerial: 'Seriya qo‘shish',
+    removeSerial: 'Seriyani olib tashlash',
+    serialUnitCount: '{count} dona',
+    serialInjectorMax: 'Eng ko‘pi {max} ta injektor seriyasi kiritish mumkin',
+    serialSingleRequired: 'Bitta seriya raqami talab qilinadi',
+    serialDuplicate: 'Takroriy seriya raqami',
+    serialEmpty: 'Seriya raqami bo‘sh bo‘lishi mumkin emas',
+    serialTooLong: 'Seriya raqami juda uzun',
+    serialCommaNotAllowed: 'Har bir seriyani alohida kiriting, vergul ishlatmang',
+    serialStorageTooLong: 'Seriya ma’lumotlari saqlash hajmidan oshib ketdi',
     login: 'Kirish',
     logout: 'Chiqish',
     profile: 'Profil',
@@ -722,6 +733,7 @@ const translations = {
     selectProductPlaceholder: 'Mahsulotni tanlang',
     selectWarehousePlaceholder: 'Omborni tanlang',
     exportCsvAction: 'CSV eksport qilish',
+    exportClientWarranty: 'Mijoz formati Excel',
     exportingCsv: 'Eksport qilinmoqda...',
 
     valCategoryRequired: 'Toifani tanlang',
@@ -752,6 +764,17 @@ const translations = {
     noReportDataYetDesc: "Kafolat formalari va mahsulotlar qo'shilgach, bu yerda ko'rinadi",
   },
   ru: {
+    serialNumbers: 'Серийные номера',
+    addSerial: 'Добавить серийный номер',
+    removeSerial: 'Удалить серийный номер',
+    serialUnitCount: '{count} шт.',
+    serialInjectorMax: 'Можно указать не более {max} серийных номеров форсунок',
+    serialSingleRequired: 'Требуется один серийный номер',
+    serialDuplicate: 'Повторяющийся серийный номер',
+    serialEmpty: 'Серийный номер не может быть пустым',
+    serialTooLong: 'Серийный номер слишком длинный',
+    serialCommaNotAllowed: 'Введите каждый номер отдельно, без запятых',
+    serialStorageTooLong: 'Данные серийных номеров превышают допустимый объём хранения',
     login: 'Вход',
     logout: 'Выход',
     profile: 'Профиль',
@@ -1467,6 +1490,7 @@ const translations = {
     selectProductPlaceholder: 'Выберите продукт',
     selectWarehousePlaceholder: 'Выберите склад',
     exportCsvAction: 'Экспорт в CSV',
+    exportClientWarranty: 'Excel в формате клиента',
     exportingCsv: 'Экспортируется...',
 
     valCategoryRequired: 'Выберите категорию',

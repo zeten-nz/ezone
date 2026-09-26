@@ -13,25 +13,25 @@ test('UX hotfix: new warranty starts with ALL FOUR rows enabled (cylinder includ
   assert.equal(rows.length, 4);
   assert.deepEqual(rows.map((r) => r.equipment_type), EQUIPMENT_TYPES);
   assert.ok(rows.every((r) => r.enabled === true));
-  assert.ok(rows.every((r) => r.product === null && r.serial_number === '' && r.brand_name === null && r.model === null));
+  assert.ok(rows.every((r) => r.product === null && r.serial_numbers.length === 1 && r.serial_numbers[0] === '' && r.brand_name === null && r.model === null));
 });
 
 test('explicitly REMOVED cylinder is OMITTED from the wire payload — exactly 3 objects, never a null-placeholder row', () => {
   // simulate "Tsilindrni olib tashlash": enabled:false + cleared fields
   const rows = EMPTY_EQUIPMENT_ROWS().map((r) => (r.equipment_type === 'CYLINDER'
     ? { ...r, enabled: false }
-    : { ...r, product: { id: 9, name: 'X' }, serial_number: 'S' }));
+    : { ...r, product: { id: 9, name: 'X' }, serial_numbers: ['S'] }));
   const wire = toWireEquipment(rows);
   assert.equal(wire.length, 3);
   assert.ok(!wire.some((w) => w.equipment_type === 'CYLINDER'));
-  assert.ok(wire.every((w) => w.product_id === 9 && w.serial_number === 'S'));
+  assert.ok(wire.every((w) => w.product_id === 9 && w.serial_numbers.length === 1 && w.serial_numbers[0] === 'S'));
 });
 
 test('default-enabled cylinder goes to the wire as a normal catalog row', () => {
-  const rows = EMPTY_EQUIPMENT_ROWS().map((r) => ({ ...r, product: { id: 7, name: 'X' }, serial_number: 'S' }));
+  const rows = EMPTY_EQUIPMENT_ROWS().map((r) => ({ ...r, product: { id: 7, name: 'X' }, serial_numbers: ['S'] }));
   const wire = toWireEquipment(rows);
   assert.equal(wire.length, 4);
-  assert.deepEqual(wire.find((w) => w.equipment_type === 'CYLINDER'), { equipment_type: 'CYLINDER', serial_number: 'S', product_id: 7 });
+  assert.deepEqual(wire.find((w) => w.equipment_type === 'CYLINDER'), { equipment_type: 'CYLINDER', serial_numbers: ['S'], product_id: 7 });
 });
 
 test('typed cylinder round-trips brand_name/model on the wire (frontend never destroys typed identity)', () => {
@@ -42,7 +42,7 @@ test('typed cylinder round-trips brand_name/model on the wire (frontend never de
   const cylEditable = rows.find((r) => r.equipment_type === 'CYLINDER');
   assert.equal(isTypedCylinderRow(cylEditable), true);
   const wire = toWireEquipment(rows);
-  assert.deepEqual(wire.find((w) => w.equipment_type === 'CYLINDER'), { equipment_type: 'CYLINDER', serial_number: 'CYLINDER-SN', product_id: null, brand_name: 'GZWM', model: '60L' });
+  assert.deepEqual(wire.find((w) => w.equipment_type === 'CYLINDER'), { equipment_type: 'CYLINDER', serial_numbers: ['CYLINDER-SN'], product_id: null, brand_name: 'GZWM', model: '60L' });
 });
 
 test('25.53 editing a warranty WITH a cylinder opens the slot enabled', () => {
@@ -59,7 +59,7 @@ test('25.54/58/59 a 3-row no-cylinder warranty normalizes onto ALL 4 canonical s
   assert.equal(cyl.enabled, false);
   assert.equal(cyl.product, null);
   assert.equal(rows[2].product.name, 'CONTROLLER P'); // controller stayed in its own slot
-  assert.equal(rows[3].serial_number, 'INJECTOR_RAIL-SN');
+  assert.deepEqual(rows[3].serial_numbers, ['INJECTOR_RAIL-SN']);
 });
 
 test('a legacy-partial warranty (missing a REQUIRED slot) yields an enabled empty slot so it can be completed', () => {

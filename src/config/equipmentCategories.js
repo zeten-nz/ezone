@@ -1,3 +1,4 @@
+import { editableSerialNumbers } from '../utils/equipmentSerials.js';
 /**
  * The warranty form's canonical equipment slots. Beta-3: CYLINDER is
  * OPTIONAL — REDUCER/CONTROLLER/INJECTOR_RAIL stay required. The form
@@ -26,10 +27,9 @@ export const getEquipmentTypeLabel = (t, type) => t(EQUIPMENT_TYPE_LABEL_KEY[typ
 // and scopes the Product autocomplete) — never sent to the server as
 // authoritative data; the server always derives brand from the resolved
 // product_id.
-// Serial number is a plain field (temporary product decision): it is no
-// longer validated against the local inventory/barcode system and the
-// Manual Verification fields are gone from the active form. It is still
-// required server-side for catalog products and sent to EasyGas.
+// Serial numbers are individual inputs, not inventory/barcode lookups.
+// Manual Verification fields are gone from the active form. The backend
+// validates counts and serializes the array for storage and EasyGas.
 // brand_name/model carry an existing TYPED (free-text) cylinder through an
 // edit unchanged — the frontend cannot create typed cylinders, but must
 // never destroy one just because the admin edited an unrelated field.
@@ -37,7 +37,7 @@ const emptyRow = (equipment_type, enabled = true) => ({
   equipment_type,
   brand: '',
   product: null,
-  serial_number: '',
+  serial_numbers: [''],
   brand_name: null,
   model: null,
   enabled,
@@ -73,7 +73,7 @@ export const toEditableEquipment = (equipment) => {
       equipment_type: type,
       brand: row.product_brand || '',
       product: row.product_id ? { id: row.product_id, name: row.product_name } : null,
-      serial_number: row.serial_number || '',
+      serial_numbers: editableSerialNumbers(row),
       brand_name: row.brand_name || null,
       model: row.model || null,
       enabled: true, // a stored row (incl. an existing cylinder) opens enabled
@@ -88,7 +88,7 @@ export const toEditableEquipment = (equipment) => {
 export const toWireEquipment = (equipment) => (equipment || [])
   .filter((row) => row.enabled !== false)
   .map((row) => {
-    const base = { equipment_type: row.equipment_type, serial_number: row.serial_number || null };
+    const base = { equipment_type: row.equipment_type, serial_numbers: editableSerialNumbers(row) };
     if (isTypedCylinderRow(row)) {
       return { ...base, product_id: null, brand_name: row.brand_name, model: row.model };
     }
