@@ -112,6 +112,7 @@ const EmployeeWarrantyHistoryModern = () => {
       vehicle_mileage:              form.vehicle_mileage              ?? '',
       owner_full_name:              form.owner_full_name              ?? '',
       owner_phone:                  form.owner_phone                  ?? '',
+      owner_phone_unavailable:      !form.owner_phone,
       equipment:                    toEditableEquipment(form.equipment),
     });
     setEditErrors({});

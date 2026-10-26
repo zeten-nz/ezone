@@ -52,6 +52,7 @@ export const EMPTY_WARRANTY_FORM = {
   vehicle_mileage: '',
   owner_full_name: '',
   owner_phone: '',
+  owner_phone_unavailable: false,
   equipment: EMPTY_EQUIPMENT_ROWS(),
 };
 
@@ -78,7 +79,8 @@ const isSectionComplete = (formData, section) => {
   if (section === 'equipment') {
     return isEquipmentSectionComplete(formData);
   }
-  return SECTION_FIELDS[section].every((field) => !!formData[field]);
+  return SECTION_FIELDS[section].every((field) =>
+    (field === 'owner_phone' && formData.owner_phone_unavailable) || !!formData[field]);
 };
 
 // ── Section wrapper (module-level to satisfy react-refresh/only-export-components) ──
@@ -277,15 +279,30 @@ const WarrantyFormFields = ({
             error={errors.owner_full_name}
             required
           />
-          <Input
-            label={t('ownerPhone')}
-            name="owner_phone"
-            type="tel"
-            value={formData.owner_phone}
-            onChange={onChange}
-            error={errors.owner_phone}
-            required
-          />
+          <div>
+            <Input
+              label={t('ownerPhone')}
+              name="owner_phone"
+              type="tel"
+              value={formData.owner_phone_unavailable ? '' : formData.owner_phone}
+              onChange={onChange}
+              error={errors.owner_phone}
+              disabled={!!formData.owner_phone_unavailable}
+              required={!formData.owner_phone_unavailable}
+            />
+            <label className="mt-2 flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-neutral-300"
+                checked={!!formData.owner_phone_unavailable}
+                onChange={(e) => {
+                  onChange({ target: { name: 'owner_phone_unavailable', value: e.target.checked } });
+                  if (e.target.checked) onChange({ target: { name: 'owner_phone', value: '' } });
+                }}
+              />
+              {t('ownerPhoneUnavailable')}
+            </label>
+          </div>
         </div>
       </SectionCard>
 

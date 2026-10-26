@@ -110,6 +110,15 @@ const Login = () => {
               {t('signUp')}
             </Link>
           </p>
+
+          <a
+            href="https://guide.easygas-garant.uz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 block w-full text-center rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+          >
+            {t('guideLink')}
+          </a>
         </div>
 
         <p className="mt-6 text-center text-xs text-neutral-400">

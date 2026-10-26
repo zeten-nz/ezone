@@ -34,12 +34,14 @@ export const validateWarrantyForm = (formData, t) => {
   const errors = {};
   const requiredFields = Object.values(SECTION_FIELDS).flat();
   requiredFields.forEach((field) => {
+    // Phone is exempt only when the installer ticked "phone unavailable".
+    if (field === 'owner_phone' && formData.owner_phone_unavailable) return;
     if (!formData[field]) errors[field] = t('fieldRequired');
   });
 
   if (!formData.fuel_type) errors.fuel_type = t('fieldRequired');
 
-  if (formData.owner_phone && !errors.owner_phone && !PHONE_REGEX.test(formData.owner_phone)) {
+  if (!formData.owner_phone_unavailable && formData.owner_phone && !errors.owner_phone && !PHONE_REGEX.test(formData.owner_phone)) {
     errors.owner_phone = t('valPhoneInvalid');
   }
 
